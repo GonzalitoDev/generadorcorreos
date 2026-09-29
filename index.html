@@ -226,6 +226,39 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
 @keyframes hue { to { filter: hue-rotate(360deg); } }
 @keyframes roll { from { transform: rotate(-360deg) scale(.5); } }
 @keyframes spark { to { transform: translateY(26px) scale(0); opacity: 0; } }
+/* Sección Discord y sitios exigentes */
+.strict .sheet-in { background: rgba(10, 0, 30, .78); }
+.strict h2 { font-size: clamp(20px, 4vw, 26px); }
+.strict .intro-txt { margin: 0; color: var(--ink); max-width: 64ch; }
+.strict .intro-txt b { color: var(--acid); }
+.opt-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.opt-num {
+  display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex: none;
+  font: 15px var(--font-display); color: var(--void); background: var(--acid); box-shadow: 3px 3px 0 var(--pink);
+}
+.opt-title h3 { margin: 0; font: 16px var(--font-display); text-transform: uppercase; }
+.opt-title .tag { font: 11px var(--font-display); color: var(--void); background: var(--cyan); padding: 3px 8px; border-radius: 999px; }
+.alias-in { display: flex; gap: 10px; flex-wrap: wrap; }
+.alias-in input { flex: 1 1 240px; min-width: 0; border-radius: 12px; }
+.alias-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.alias-list li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.4); border: 2px solid var(--line); }
+.alias-list .a { flex: 1; min-width: 0; font: 600 15px var(--font-mono); overflow-wrap: anywhere; user-select: all; color: var(--ink); }
+.alias-list .a .plus { color: var(--pink); }
+.alias-list .for { font: 10px var(--font-display); color: var(--cyan); text-transform: uppercase; flex: none; }
+@media (max-width: 520px) { .alias-list .for { display: none; } }
+a.toy { text-decoration: none; display: inline-block; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.hint.warn { color: var(--orange); font-weight: 700; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.card {
+  display: grid; gap: 4px; align-content: start; padding: 14px; border-radius: 14px; text-decoration: none; color: var(--ink);
+  background: var(--glass-2); border: 2px solid var(--line); transition: transform .15s, border-color .15s; min-width: 0;
+}
+a.card:hover { transform: rotate(-1.2deg) scale(1.03); border-color: var(--acid); }
+.card strong { font: 14px var(--font-display); color: var(--acid); text-transform: uppercase; }
+.card span { font-size: 13px; color: var(--muted); }
+.card .go { color: var(--cyan); font-weight: 700; font-size: 13px; }
+
 /* Más falopa */
 @property --h { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
 h1 { background: none; color: var(--ink); -webkit-text-fill-color: currentColor; filter: none; animation: hues 4s linear infinite; }
@@ -290,6 +323,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <button class="toy" type="button" id="party" aria-pressed="false">Modo fiesta</button>
       <button class="toy" type="button" id="trip" aria-pressed="false">Modo viaje</button>
       <button class="toy" type="button" id="sound" aria-pressed="true">Sonido: sí</button>
+      <a class="toy" href="#discord">¿Para Discord?</a>
     </div>
     <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
   </header>
@@ -343,6 +377,49 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <iframe class="body" id="r-html" title="Contenido del correo" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
       <pre class="body" id="r-text" hidden></pre>
     </div>
+    </div>
+  </section>
+
+  <section class="sheet strict" id="discord" aria-labelledby="t-strict">
+    <div class="sheet-in">
+      <div class="block">
+        <span class="label">¿La página no acepta mails temporales?</span>
+        <h2 id="t-strict">Para Discord y sitios exigentes</h2>
+        <p class="intro-txt">Discord, Google, Instagram o TikTok rechazan los mails temporales. Para esos, usá una de estas opciones: son direcciones <b>reales tuyas</b>, así que funcionan y además podés recuperar la cuenta.</p>
+      </div>
+
+      <form class="block" id="alias-form">
+        <div class="opt-title"><span class="opt-num">1</span><h3>Alias de tu mail</h3><span class="tag">Gratis · al instante</span></div>
+        <p class="hint">Si tenés <b>tunombre@gmail.com</b>, los mails a <b>tunombre+discord@gmail.com</b> llegan a tu misma bandeja. Así sabés quién te manda spam y lo filtrás. Funciona con Gmail, Outlook/Hotmail, iCloud y Proton.</p>
+        <div class="alias-in">
+          <input type="text" id="alias-mail" placeholder="tumail@gmail.com" autocomplete="email" inputmode="email" aria-label="Tu mail">
+          <input type="text" id="alias-tag" placeholder="etiqueta (opcional)" autocomplete="off" aria-label="Etiqueta propia" maxlength="30">
+          <button class="btn primary" type="submit">Armar alias</button>
+        </div>
+        <p class="hint" id="alias-msg" hidden></p>
+        <ul class="alias-list" id="alias-list"></ul>
+      </form>
+
+      <div class="block">
+        <div class="opt-title"><span class="opt-num">2</span><h3>Relays de privacidad</h3><span class="tag">Se apagan cuando quieras</span></div>
+        <p class="hint">Te dan una dirección única que reenvía a tu mail real. Si alguien te llena de spam, la desactivás y listo.</p>
+        <div class="cards">
+          <a class="card" href="https://relay.firefox.com" target="_blank" rel="noopener"><strong>Firefox Relay</strong><span>De Mozilla. 5 alias gratis.</span><span class="go">Abrir →</span></a>
+          <a class="card" href="https://simplelogin.io" target="_blank" rel="noopener"><strong>SimpleLogin</strong><span>De Proton. 10 alias gratis.</span><span class="go">Abrir →</span></a>
+          <a class="card" href="https://duckduckgo.com/email/" target="_blank" rel="noopener"><strong>DuckDuckGo Email</strong><span>Alias ilimitados y gratis.</span><span class="go">Abrir →</span></a>
+          <div class="card"><strong>Ocultar mi correo</strong><span>Si tenés iCloud+: Ajustes → tu nombre → iCloud → Ocultar mi correo.</span></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="opt-title"><span class="opt-num">3</span><h3>Un mail nuevo gratis</h3><span class="tag">Solo para eso</span></div>
+        <p class="hint">Si preferís tener todo separado, creá una cuenta aparte en un proveedor gratuito.</p>
+        <div class="cards">
+          <a class="card" href="https://accounts.google.com/signup" target="_blank" rel="noopener"><strong>Gmail</strong><span>El más aceptado en todos lados.</span><span class="go">Crear cuenta →</span></a>
+          <a class="card" href="https://signup.live.com" target="_blank" rel="noopener"><strong>Outlook</strong><span>Cuenta de Microsoft gratis.</span><span class="go">Crear cuenta →</span></a>
+          <a class="card" href="https://account.proton.me/mail/signup" target="_blank" rel="noopener"><strong>Proton Mail</strong><span>Cifrado y sin publicidad.</span><span class="go">Crear cuenta →</span></a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -467,6 +544,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     "¿Probaste el modo fiesta? Es medio ilegal.",
     "El modo viaje no lo recomienda ningún médico.",
     "Tocá en cualquier lado de la página. Dale, animate.",
+    "¿Discord no acepta el mail? Bajá a la parte de «sitios exigentes».",
     "Escribí «falopa» en cualquier lado de la página. No te digo más.",
     "Mi primo es un telegrama. Está viejito.",
     "Cero spam en tu mail posta. De nada.",
@@ -923,6 +1001,47 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   });
 
   $("refresh").addEventListener("click", () => fetchInbox(true));
+
+  /* ---------- Alias de tu mail (para Discord y sitios exigentes) ---------- */
+  const PLUS_OK = /^(gmail\.com|googlemail\.com|outlook\.[a-z.]+|hotmail\.[a-z.]+|live\.[a-z.]+|msn\.com|icloud\.com|me\.com|mac\.com|proton\.me|protonmail\.com|pm\.me|fastmail\.com)$/;
+  const TAGS = ["discord", "juegos", "compras", "redes", "newsletters", "pruebas"];
+  function buildAliases() {
+    const raw = $("alias-mail").value.trim().toLowerCase();
+    const msg = $("alias-msg"), list = $("alias-list");
+    list.innerHTML = ""; msg.hidden = true; msg.classList.remove("warn");
+    if (!raw) return;
+    const m = raw.match(/^([^@\s+]+)(?:\+[^@\s]*)?@([a-z0-9.-]+\.[a-z]{2,})$/);
+    if (!m) { msg.textContent = "Escribí tu mail completo, por ejemplo tunombre@gmail.com."; msg.classList.add("warn"); msg.hidden = false; return; }
+    const [, user, domain] = m;
+    if (!PLUS_OK.test(domain)) {
+      msg.textContent = "Ojo: no sabemos si " + domain + " acepta alias con «+». Mandate un mail de prueba antes de usarlo.";
+      msg.classList.add("warn"); msg.hidden = false;
+    }
+    const own = cleanUser($("alias-tag").value).replace(/[.]/g, "");
+    const tags = own ? [own, ...TAGS.filter((t) => t !== own)] : TAGS;
+    tags.forEach((tag, i) => {
+      const addr = user + "+" + tag + "@" + domain;
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="a"><span class="u"></span><span class="plus"></span><span class="d"></span></span><span class="for"></span><button class="btn small" type="button">Copiar</button>';
+      li.querySelector(".u").textContent = user;
+      li.querySelector(".plus").textContent = "+" + tag;
+      li.querySelector(".d").textContent = "@" + domain;
+      li.querySelector(".for").textContent = i === 0 && own ? "tu etiqueta" : tag === "discord" ? "ideal Discord" : "";
+      const btn = li.querySelector("button");
+      btn.addEventListener("click", () => {
+        const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); if (window.fx) window.fx.say("Alias copiado. Los mails te llegan a tu bandeja de siempre 📬"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+        const fb = () => { const r = document.createRange(); r.selectNodeContents(li.querySelector(".a")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = "Pulsá Ctrl+C"; };
+        try { navigator.clipboard.writeText(addr).then(ok, fb); } catch (err) { fb(); }
+      });
+      list.appendChild(li);
+    });
+    try { localStorage.setItem("gc-alias-mail", raw); } catch (e) {}
+  }
+  $("alias-form").addEventListener("submit", (e) => { e.preventDefault(); buildAliases(); if (window.boom) window.boom($("alias-list")); });
+  $("alias-mail").addEventListener("input", buildAliases);
+  $("alias-tag").addEventListener("input", buildAliases);
+  try { const saved = localStorage.getItem("gc-alias-mail"); $("alias-mail").value = saved || "tunombre@gmail.com"; } catch (e) { $("alias-mail").value = "tunombre@gmail.com"; }
+  buildAliases();
 
   /* ---------- Inicio ---------- */
   (async function init() {

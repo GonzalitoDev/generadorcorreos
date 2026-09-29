@@ -259,6 +259,20 @@ a.card:hover { transform: rotate(-1.2deg) scale(1.03); border-color: var(--acid)
 .card span { font-size: 13px; color: var(--muted); }
 .card .go { color: var(--cyan); font-weight: 700; font-size: 13px; }
 
+/* Mejoras */
+.boxes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.boxes li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.35); border: 2px dashed var(--line); }
+.boxes .a { flex: 1 1 200px; min-width: 0; font: 600 14px var(--font-mono); overflow-wrap: anywhere; }
+.boxes .p { font: 10px var(--font-display); color: var(--cyan); text-transform: uppercase; }
+.boxes .x { background: none; border: 0; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.boxes .x:hover { color: var(--err); }
+button.code-pill { cursor: pointer; border: 0; }
+button.code-pill:hover { filter: brightness(1.1); }
+.kbd { font: 11px var(--font-mono); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--ink); }
+body.calm #floaters, body.calm .grain { display: none; }
+body.calm *, body.calm *::before, body.calm *::after { animation: none !important; transition: none !important; }
+body.calm .wrap > * { filter: none !important; }
+
 /* Más falopa */
 @property --h { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
 h1 { background: none; color: var(--ink); -webkit-text-fill-color: currentColor; filter: none; animation: hues 4s linear infinite; }
@@ -323,6 +337,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <button class="toy" type="button" id="party" aria-pressed="false">Modo fiesta</button>
       <button class="toy" type="button" id="trip" aria-pressed="false">Modo viaje</button>
       <button class="toy" type="button" id="sound" aria-pressed="true">Sonido: sí</button>
+      <button class="toy" type="button" id="calm" aria-pressed="false">Modo tranqui</button>
       <a class="toy" href="#discord">¿Para Discord?</a>
     </div>
     <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
@@ -357,10 +372,19 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       </div>
     </form>
 
+    <div class="block" id="boxes-block" hidden>
+      <span class="label">Tus buzones anteriores</span>
+      <ul class="boxes" id="boxes"></ul>
+      <p class="hint">Atajos: <span class="kbd">C</span> copiar · <span class="kbd">N</span> mail nuevo · <span class="kbd">R</span> actualizar · <span class="kbd">?</span> ayuda</p>
+    </div>
+
     <div class="block" id="inbox-block">
       <div class="inbox-head">
         <h2>Bandeja</h2>
-        <button class="btn small" type="button" id="refresh">Actualizar</button>
+        <div class="row">
+          <button class="btn small ghost" type="button" id="notify" aria-pressed="false">Avisarme</button>
+          <button class="btn small" type="button" id="refresh">Actualizar</button>
+        </div>
       </div>
       <ul class="msgs" id="msgs" hidden></ul>
       <div class="empty" id="empty"><div class="radar" aria-hidden="true"></div><strong>Esperando mails…</strong><span class="wait-line" id="wait-line">Consultando con los aliens…</span>Lo que llegue a esta dirección aparece acá solo. Revisamos cada 5 segundos.</div>
@@ -372,7 +396,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
         <div class="subj" id="r-subj"></div>
         <div class="from" id="r-from"></div>
       </div>
-      <div class="row" id="r-code-row" hidden><span class="label">Código detectado</span><span class="code-pill pop" id="r-code"></span></div>
+      <div class="row" id="r-code-row" hidden><span class="label">Código detectado</span><button class="code-pill pop" type="button" id="r-code" title="Tocá para copiar"></button><span class="hint">Tocalo para copiarlo</span></div>
       <div class="links" id="r-links"></div>
       <iframe class="body" id="r-html" title="Contenido del correo" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
       <pre class="body" id="r-text" hidden></pre>
@@ -446,7 +470,9 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
 <script>
 /* ---------- Efectos: plasma de fondo y confeti ---------- */
 (function () {
-  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const calmOS = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  try { if (localStorage.getItem("gc-calm") === "1") document.body.classList.add("calm"); } catch (e) {}
+  const isCalm = () => calmOS || document.body.classList.contains("calm");
   const cv = document.getElementById("plasma"), ctx = cv.getContext("2d");
   const W = 96, H = 64; cv.width = W; cv.height = H;
   const img = ctx.createImageData(W, H);
@@ -465,10 +491,11 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       img.data[k] = c[0] * .55; img.data[k + 1] = c[1] * .35; img.data[k + 2] = c[2] * .6; img.data[k + 3] = 255;
     }
     ctx.putImageData(img, 0, 0);
-    if (!calm && !document.hidden) requestAnimationFrame(frame);
+    if (!isCalm() && !document.hidden) requestAnimationFrame(frame);
   }
   frame(0);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && !calm) requestAnimationFrame(frame); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !isCalm()) requestAnimationFrame(frame); });
+  window.restartPlasma = () => { if (!isCalm()) requestAnimationFrame(frame); };
   cv.style.imageRendering = "auto"; cv.style.filter = "blur(18px) saturate(1.4)"; cv.style.transform = "scale(1.1)";
 
   const cf = document.getElementById("confetti"), c2 = cf.getContext("2d");
@@ -477,7 +504,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   function size() { cf.width = innerWidth * devicePixelRatio; cf.height = innerHeight * devicePixelRatio; }
   addEventListener("resize", size); size();
   window.boom = function (el) {
-    if (calm) return;
+    if (isCalm()) return;
     const r = el ? el.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 3, width: 0, height: 0 };
     const x = (r.left + r.width / 2) * devicePixelRatio, y = (r.top + r.height / 2) * devicePixelRatio;
     for (let i = 0; i < 90; i++) {
@@ -565,7 +592,8 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   /* ---------- Estela de chispas ---------- */
   let lastSpark = 0;
   const sparkColors = ["#ff2bd6", "#c6ff00", "#00f0ff", "#ff8a00", "#8b5cff"];
-  if (!calm) addEventListener("pointermove", (e) => {
+  addEventListener("pointermove", (e) => {
+    if (isCalm()) return;
     const now = performance.now(); if (now - lastSpark < 28) return; lastSpark = now;
     const s = document.createElement("span"); s.className = "spark";
     s.style.left = e.clientX + "px"; s.style.top = e.clientY + "px";
@@ -579,9 +607,9 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   function setParty(on) {
     document.body.classList.toggle("party", on); partyBtn.setAttribute("aria-pressed", on);
     partyBtn.textContent = on ? "Fiesta: ON" : "Modo fiesta";
-    if (on) { sfx.party(); window.boom(); setTimeout(() => window.boom(), 250); say("¡UNTZ UNTZ UNTZ! 🪩"); jump(true); }
+    if (on && !isCalm()) { sfx.party(); window.boom(); setTimeout(() => window.boom(), 250); say("¡UNTZ UNTZ UNTZ! 🪩"); jump(true); }
   }
-  partyBtn.addEventListener("click", () => setParty(!document.body.classList.contains("party")));
+  partyBtn.addEventListener("click", () => { if (document.body.classList.contains("calm")) calmBtn.click(); setParty(!document.body.classList.contains("party")); });
   function paintSound() { soundBtn.setAttribute("aria-pressed", soundOn); soundBtn.textContent = soundOn ? "Sonido: sí" : "Sonido: no"; }
   soundBtn.addEventListener("click", () => { soundOn = !soundOn; paintSound(); try { localStorage.setItem("gc-sound", soundOn ? "1" : "0"); } catch (e) {} sfx.pop(); });
   paintSound();
@@ -643,7 +671,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   /* ---------- Emojis flotando ---------- */
   const EMOJIS = ["🍄", "🌈", "👽", "🪩", "🦄", "💌", "✨", "🌀", "🔮", "🍭", "🛸", "🌵", "🐙", "🧉", "⭐", "🎈"];
   const floaters = document.getElementById("floaters");
-  if (!calm) EMOJIS.forEach((e, k) => {
+  if (!calmOS) EMOJIS.forEach((e, k) => {
     const sp = document.createElement("span"); sp.textContent = e;
     sp.style.left = (k * 6.3 + Math.random() * 4) % 98 + "%";
     sp.style.setProperty("--s", 22 + Math.random() * 30 + "px");
@@ -655,7 +683,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   /* ---------- Stickers al tocar cualquier lado ---------- */
   const STICK = ["🍄", "🌈", "✨", "🦄", "🪩", "💥", "🌀", "👽", "🔥", "💖", "🤪", "⚡"];
   addEventListener("pointerdown", (e) => {
-    if (calm || e.target.closest("button, a, input, select, textarea, iframe, .msg, .address, .buddy")) return;
+    if (isCalm() || e.target.closest("button, a, input, select, textarea, iframe, .msg, .address, .buddy")) return;
     const st = document.createElement("span"); st.className = "sticker";
     st.textContent = STICK[Math.floor(Math.random() * STICK.length)];
     st.style.left = e.clientX + "px"; st.style.top = e.clientY + "px";
@@ -665,7 +693,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
 
   /* ---------- Lluvia de emojis ---------- */
   function rain(n) {
-    if (calm) return;
+    if (isCalm()) return;
     for (let k = 0; k < (n || 26); k++) {
       const r = document.createElement("span"); r.className = "rain";
       r.textContent = ["💌", "📬", "✉️", "🌈", "✨", "🍄"][k % 6];
@@ -678,6 +706,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   /* ---------- Modo viaje ---------- */
   const tripBtn = document.getElementById("trip");
   tripBtn.addEventListener("click", () => {
+    if (document.body.classList.contains("calm")) calmBtn.click();
     const on = !document.body.classList.contains("trip");
     document.body.classList.toggle("trip", on); tripBtn.setAttribute("aria-pressed", on);
     tripBtn.textContent = on ? "Viaje: ON" : "Modo viaje";
@@ -687,6 +716,19 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
   const mailFx = window.fx.mail;
   window.fx.mail = (n) => { mailFx(n); rain(); };
   window.fx.rain = rain;
+
+  /* ---------- Modo tranqui ---------- */
+  const calmBtn = document.getElementById("calm");
+  function paintCalm() { const on = document.body.classList.contains("calm"); calmBtn.setAttribute("aria-pressed", on); calmBtn.textContent = on ? "Tranqui: ON" : "Modo tranqui"; }
+  calmBtn.addEventListener("click", () => {
+    const on = !document.body.classList.contains("calm");
+    if (on) { setParty(false); document.body.classList.remove("trip"); tripBtn.setAttribute("aria-pressed", false); tripBtn.textContent = "Modo viaje"; }
+    document.body.classList.toggle("calm", on);
+    try { localStorage.setItem("gc-calm", on ? "1" : "0"); } catch (e) {}
+    paintCalm(); window.restartPlasma();
+    say(on ? "Ok, bajamos un cambio. Todo quieto 🧘" : "¡Volvió la falopa! 🌈");
+  });
+  paintCalm();
 
   setTimeout(() => say("¡Hola! Soy Carta 💌 Ya te armé un mail. Tocame si te aburrís."), 1400);
 })();
@@ -869,7 +911,48 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     throw lastErr || new Error("Ningún servicio de correo respondió");
   }
 
+  /* ---------- Historial de buzones ---------- */
+  const HKEY = "gc-boxes";
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(HKEY) || "[]").filter((a) => a && a.address && PROVIDERS[a.p]); } catch (e) {}
+  const saveH = () => { try { localStorage.setItem(HKEY, JSON.stringify(history)); } catch (e) {} };
+  function forget(address) { history = history.filter((x) => x.address !== address); saveH(); renderBoxes(); }
+  function remember(a) { if (!a) return; history = [a, ...history.filter((x) => x.address !== a.address)].slice(0, 8); saveH(); renderBoxes(); }
+  function renderBoxes() {
+    const list = history.filter((x) => !acct || x.address !== acct.address);
+    $("boxes-block").hidden = list.length === 0;
+    $("boxes").innerHTML = "";
+    list.forEach((a) => {
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="a"></span><span class="p"></span><button class="btn small" type="button">Usar</button><button class="x" type="button" aria-label="Olvidar este buzón">×</button>';
+      li.querySelector(".a").textContent = a.address;
+      li.querySelector(".p").textContent = PROVIDERS[a.p].name;
+      li.querySelector(".btn").addEventListener("click", () => switchTo(a));
+      li.querySelector(".x").addEventListener("click", () => forget(a.address));
+      $("boxes").appendChild(li);
+    });
+  }
+  async function switchTo(a) {
+    busy(true); stopPolling(); status("Volviendo a " + a.address + "…");
+    const prev = acct;
+    try {
+      const p = PROVIDERS[a.p];
+      await useProvider(p);
+      await p.restore(a);
+      if (prev) remember(prev);
+      acct = a; save(); forget(a.address);
+      seen = new Set(); primed = false;
+      showAccount(); renderInbox([]); $("back").click(); startPolling();
+      if (window.fx) window.fx.say("De vuelta en " + a.address + " 🔁");
+    } catch (e) {
+      status("Ese buzón ya no existe (" + e.message + "). Lo saqué de la lista.", true);
+      forget(a.address);
+      if (prev) { acct = prev; prov = PROVIDERS[prev.p]; await useProvider(prov).catch(() => {}); startPolling(); }
+    } finally { busy(false); }
+  }
+
   async function createAccount(user) {
+    const prevAcct = acct;
     const domain = $("domain").value;
     try {
       acct = await prov.create(user, domain);
@@ -881,6 +964,8 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       acct = await other.create(user, list[0]);
     }
     save(); seen = new Set(); primed = false;
+    if (prevAcct) remember(prevAcct);
+    renderBoxes();
   }
 
   /* ---------- Bandeja ---------- */
@@ -918,6 +1003,9 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       li.appendChild(b); ul.appendChild(li);
     });
     if (fresh.length && primed && window.fx) window.fx.mail(fresh.length);
+    if (fresh.length && primed && document.hidden && notifyOn && "Notification" in window && Notification.permission === "granted") {
+      try { new Notification(fresh.length > 1 ? "Te llegaron " + fresh.length + " mails 📬" : "Te llegó un mail 📬", { body: (fresh[0].from ? fresh[0].from + ": " : "") + (fresh[0].subject || "") }); } catch (e) {}
+    }
     primed = true;
     if (fresh.length && document.hidden) document.title = "(" + fresh.length + ") Generador de Correos";
   }
@@ -994,13 +1082,49 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     confirmDelete = false; btn.textContent = "Borrar buzón";
     busy(true); stopPolling(); status("Borrando buzón…");
     try { await PROVIDERS[acct.p].remove(acct); } catch (err) {}
-    acct = null; clear(); showAccount(); renderInbox([]); $("back").click();
+    forget(acct.address); acct = null; clear(); showAccount(); renderInbox([]); $("back").click();
     status("Buzón borrado. Cocinando uno nuevo…");
     try { await createAccount(""); showAccount(); startPolling(); } catch (err) { status(err.message, true); }
     busy(false);
   });
 
   $("refresh").addEventListener("click", () => fetchInbox(true));
+
+  /* ---------- Notificaciones ---------- */
+  let notifyOn = false;
+  try { notifyOn = localStorage.getItem("gc-notify") === "1" && "Notification" in window && Notification.permission === "granted"; } catch (e) {}
+  function paintNotify() { $("notify").setAttribute("aria-pressed", notifyOn); $("notify").textContent = notifyOn ? "Avisos: ON" : "Avisarme"; }
+  $("notify").addEventListener("click", async () => {
+    if (!("Notification" in window)) { status("Tu navegador no permite avisos. Dejá la pestaña abierta: el título muestra los mails nuevos.", true); return; }
+    if (notifyOn) { notifyOn = false; }
+    else {
+      const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+      if (perm !== "granted") { status("Bloqueaste los avisos. Activálos desde el candado de la barra de direcciones.", true); return; }
+      notifyOn = true;
+      if (window.fx) window.fx.say("Listo, te aviso aunque estés en otra pestaña 🔔");
+    }
+    try { localStorage.setItem("gc-notify", notifyOn ? "1" : "0"); } catch (e) {}
+    paintNotify();
+  });
+  paintNotify();
+
+  /* ---------- Copiar el código ---------- */
+  $("r-code").addEventListener("click", (e) => {
+    const btn = e.currentTarget, code = btn.textContent;
+    const ok = () => { if (window.boom) window.boom(btn); if (window.fx) window.fx.say("Código " + code + " copiado. ¡A pegarlo!"); };
+    const fb = () => { const r = document.createRange(); r.selectNodeContents(btn); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); };
+    try { navigator.clipboard.writeText(code).then(ok, fb); } catch (err) { fb(); }
+  });
+
+  /* ---------- Atajos de teclado ---------- */
+  addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || (e.target.closest && e.target.closest("input, select, textarea"))) return;
+    const k = (e.key || "").toLowerCase();
+    if (k === "c") $("copy").click();
+    else if (k === "n") $("new-form").requestSubmit();
+    else if (k === "r") fetchInbox(true);
+    else if (k === "?" && window.fx) window.fx.say("Atajos: C copia tu mail · N crea otro · R actualiza la bandeja. Y escribí «falopa» 😉", 5000);
+  });
 
   /* ---------- Alias de tu mail (para Discord y sitios exigentes) ---------- */
   const PLUS_OK = /^(gmail\.com|googlemail\.com|outlook\.[a-z.]+|hotmail\.[a-z.]+|live\.[a-z.]+|msn\.com|icloud\.com|me\.com|mac\.com|proton\.me|protonmail\.com|pm\.me|fastmail\.com)$/;
@@ -1060,7 +1184,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
         } catch (e) { acct = null; clear(); }
       }
       if (!acct) { status("Cocinando tu mail…"); await createAccount(""); }
-      showAccount(); startPolling();
+      showAccount(); renderBoxes(); startPolling();
     } catch (e) {
       $("address").textContent = "No disponible";
       const blocked = /failed to fetch|networkerror|load failed/i.test(e.message);

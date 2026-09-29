@@ -4,147 +4,211 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Generador de Correos</title>
-<meta name="description" content="Crea un correo temporal real, recibe mensajes al instante y úsalo para registrarte en páginas web.">
+<meta name="description" content="Mails temporales reales, al toque. Recibí el código de verificación acá y registrate donde quieras.">
+<meta name="theme-color" content="#12002b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=Rubik+Mono+One&family=Syne:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: una hoja de "sobre" centrada; la dirección arriba como sello, bandeja de entrada debajo, franja de correo aéreo como único adorno */
+/* Layout: póster rave psicodélico. Plasma animado de fondo, título de neón que respira,
+   cinta que corre, tarjeta de vidrio oscuro con borde arcoíris girando. Un solo mundo visual (oscuro). */
 :root {
-  --bg: #eef1f4;
-  --paper: #ffffff;
-  --ink: #16213a;
-  --muted: #5b6579;
-  --line: #d6dce5;
-  --accent: #c8322b;   /* rojo de sello postal */
-  --accent-2: #1f4fa3; /* azul de correo aéreo */
-  --chip: #f3f5f8;
-  --ok: #1d7a4a;
-  --unread: #e8eefb;
-  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
-    --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; --unread: #1c2a4a; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
-  --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; --unread: #1c2a4a; color-scheme: dark;
+  color-scheme: dark;
+  --void: #12002b;          /* violeta casi negro */
+  --glass: rgba(18, 0, 43, .72);
+  --glass-2: rgba(40, 6, 80, .62);
+  --ink: #fff6fe;
+  --muted: #d6b8ff;
+  --pink: #ff2bd6;
+  --acid: #c6ff00;
+  --cyan: #00f0ff;
+  --orange: #ff8a00;
+  --line: rgba(214, 184, 255, .28);
+  --ok: #c6ff00;
+  --err: #ff5f7e;
+  --rainbow: linear-gradient(90deg, var(--pink), var(--orange), var(--acid), var(--cyan), #8b5cff, var(--pink));
+  --font-neon: "Monoton", "Rubik Mono One", system-ui, sans-serif;
+  --font-display: "Rubik Mono One", "Arial Black", system-ui, sans-serif;
+  --font-body: "Syne", "Trebuchet MS", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+html { background: var(--void); overflow-x: clip; }
 body {
-  margin: 0; background: var(--bg); color: var(--ink);
-  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
-  padding-inline: 16px; padding-block: 32px 48px;
+  margin: 0; min-height: 100vh; background: var(--void); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 56px; overflow-x: hidden;
 }
-.wrap { max-width: 780px; margin-inline: auto; display: grid; gap: 20px; }
-header { display: grid; gap: 6px; }
-.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
-h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 6vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; }
-h1 .at { color: var(--accent-2); }
-h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; margin: 0; }
-.lede { color: var(--muted); margin: 0; max-width: 62ch; }
-
-.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.airmail {
-  height: 8px;
-  background: repeating-linear-gradient(-45deg, var(--accent) 0 14px, var(--paper) 14px 22px, var(--accent-2) 22px 36px, var(--paper) 36px 44px);
+#plasma { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .5; mix-blend-mode: overlay;
+  background: repeating-radial-gradient(circle at 30% 20%, rgba(255,255,255,.06) 0 1px, transparent 1px 3px);
 }
-.block { padding: 18px; display: grid; gap: 14px; }
-.block + .block { border-top: 1px solid var(--line); }
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none; }
 
-.label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.address-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+/* Cinta que corre */
+.ticker {
+  position: relative; z-index: 2; margin-inline: -16px; overflow: hidden; white-space: nowrap;
+  background: var(--acid); color: var(--void); font: 14px var(--font-display); letter-spacing: .06em;
+  padding-block: 8px; border-bottom: 3px solid var(--void); transform: rotate(-1.2deg) translateY(10px) scale(1.03);
+}
+.ticker span { display: inline-block; padding-inline-end: 2em; animation: run 18s linear infinite; }
+
+.wrap { position: relative; z-index: 2; max-width: 820px; margin-inline: auto; display: grid; gap: 26px; padding-top: 44px; }
+
+header { display: grid; gap: 10px; justify-items: start; }
+.eyebrow {
+  font: 12px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--void);
+  background: var(--pink); padding: 6px 10px; transform: rotate(2deg); box-shadow: 4px 4px 0 var(--cyan);
+}
+h1 {
+  margin: 0; font-family: var(--font-neon); font-weight: 400; line-height: .98;
+  font-size: clamp(40px, 11vw, 96px); letter-spacing: .01em; text-wrap: balance;
+  background: var(--rainbow); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 43, 214, .55)) drop-shadow(0 0 40px rgba(0, 240, 255, .35));
+  animation: flow 6s linear infinite;
+}
+.at {
+  display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .08em; vertical-align: -.12em;
+  font-family: var(--font-display); font-size: .78em; color: var(--void); -webkit-text-fill-color: var(--void);
+  background: conic-gradient(from 0deg, var(--pink), var(--orange), var(--acid), var(--cyan), #8b5cff, var(--pink));
+  border-radius: 50%; animation: spin 5s linear infinite;
+}
+.lede { margin: 0; max-width: 56ch; font-size: 18px; font-weight: 500; color: var(--ink); text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+.lede b { color: var(--acid); }
+
+/* Tarjeta con borde arcoíris girando */
+.sheet { position: relative; border-radius: 22px; padding: 3px; isolation: isolate; overflow: hidden; }
+.sheet::before {
+  content: ""; position: absolute; inset: -60%; z-index: -2;
+  background: conic-gradient(from 0deg, var(--pink), var(--orange), var(--acid), var(--cyan), #8b5cff, var(--pink));
+  animation: spin 7s linear infinite;
+}
+.sheet-in {
+  border-radius: 19px; background: var(--glass); backdrop-filter: blur(18px) saturate(1.6); -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  overflow: hidden;
+}
+.block { padding: 22px; display: grid; gap: 14px; }
+.block + .block { border-top: 1px dashed var(--line); }
+
+.label { font: 11px var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); }
+h2 { margin: 0; font: 22px var(--font-display); color: var(--ink); text-transform: uppercase; letter-spacing: .02em; }
+
+.address-row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
 .address {
-  font: 500 clamp(17px, 3.6vw, 22px) var(--font-mono); flex: 1 1 260px; min-width: 0;
-  overflow-wrap: anywhere; user-select: all; padding: 10px 12px; border: 1px dashed var(--line);
-  border-radius: 6px; background: var(--bg);
+  flex: 1 1 280px; min-width: 0; padding: 14px 16px; border-radius: 14px;
+  font: 700 clamp(18px, 4.2vw, 26px) var(--font-mono); overflow-wrap: anywhere; user-select: all;
+  color: var(--acid); background: rgba(0, 0, 0, .45); border: 2px solid var(--acid);
+  text-shadow: 0 0 10px rgba(198, 255, 0, .7); box-shadow: inset 0 0 24px rgba(198, 255, 0, .15), 0 0 22px rgba(198, 255, 0, .25);
 }
-.meta { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.meta { display: flex; gap: 6px 20px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .meta code { font-family: var(--font-mono); color: var(--ink); user-select: all; }
 
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.custom { display: flex; gap: 0; flex: 1 1 320px; min-width: 0; }
-.custom input { border-radius: 6px 0 0 6px; min-width: 0; flex: 1; }
-.custom select { border-radius: 0 6px 6px 0; border-left: 0; max-width: 50%; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.custom { display: flex; flex: 1 1 260px; min-width: 0; max-width: 100%; }
+.custom input { border-radius: 12px 0 0 12px; min-width: 0; flex: 1; }
+.custom select { border-radius: 0 12px 12px 0; border-left: 0; min-width: 0; max-width: 48%; flex: 0 1 auto; }
 input[type="text"], select {
-  font: 15px var(--font-body); color: var(--ink); background: var(--bg);
-  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px;
+  font: 600 15px var(--font-body); color: var(--ink); background: rgba(0, 0, 0, .4);
+  border: 2px solid var(--line); padding: 11px 12px;
 }
-.btn {
-  font: 600 14px var(--font-body); border-radius: 6px; padding: 10px 16px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--paper); color: var(--ink); white-space: nowrap;
-}
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.small { padding: 6px 12px; font-size: 13px; }
-.btn:disabled { opacity: .55; cursor: wait; }
-.btn:hover:not(:disabled) { filter: brightness(1.05); }
-.btn.done { color: var(--ok); border-color: var(--ok); }
-button:focus-visible, input:focus-visible, select:focus-visible, .msg:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+input::placeholder { color: var(--muted); opacity: .8; }
+select option { background: var(--void); color: var(--ink); }
 
-.status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
-.status.err { color: var(--accent); }
-.status.err .dot { background: var(--accent); }
-@media (prefers-reduced-motion: no-preference) {
-  .dot.live { animation: pulse 1.6s ease-in-out infinite; }
-  @keyframes pulse { 50% { opacity: .3; } }
+.btn {
+  font: 13px var(--font-display); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  border-radius: 12px; padding: 13px 18px; cursor: pointer; color: var(--void); background: var(--cyan);
+  border: 2px solid var(--void); box-shadow: 5px 5px 0 var(--pink); transition: transform .12s, box-shadow .12s;
 }
+.btn.primary { background: var(--acid); box-shadow: 5px 5px 0 var(--pink); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); box-shadow: none; }
+.btn.small { padding: 8px 12px; font-size: 11px; box-shadow: 3px 3px 0 var(--pink); }
+.btn:hover:not(:disabled) { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 8px 8px 0 var(--orange); }
+.btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--pink); }
+.btn.ghost:hover:not(:disabled) { box-shadow: none; border-color: var(--err); color: var(--err); }
+.btn:disabled { opacity: .5; cursor: wait; }
+.btn.done { background: var(--pink); color: var(--ink); }
+button:focus-visible, input:focus-visible, select:focus-visible, .msg:focus-visible, a:focus-visible { outline: 3px solid var(--acid); outline-offset: 3px; }
+
+.status { font-size: 13px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); flex: none; }
+.status.err { color: var(--err); }
+.status.err .dot { background: var(--err); box-shadow: 0 0 10px var(--err); }
 
 .inbox-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-ul.msgs { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+ul.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .msg {
-  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 14px; cursor: pointer;
-  border-top: 1px solid var(--line); background: var(--paper);
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 14px 16px; cursor: pointer;
+  border-radius: 14px; background: var(--glass-2); border: 2px solid var(--line); transition: transform .15s, border-color .15s;
 }
-.msgs li:first-child .msg { border-top: 0; }
-.msg.unread { background: var(--unread); }
-.msg .from { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.msg .time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.msg .subj { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; }
+.msg:hover { transform: rotate(-.6deg) scale(1.01); border-color: var(--cyan); }
+.msg.unread { border-color: var(--pink); box-shadow: 0 0 20px rgba(255, 43, 214, .35); }
+.msg.unread .from::before { content: "● "; color: var(--pink); }
+.msg .from { font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg .time { font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.msg .subj { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; color: var(--acid); font-weight: 700; }
 .msg .intro { grid-column: 1 / -1; font-size: 13px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.empty { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
-.empty strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+.empty { padding: 30px 16px; text-align: center; color: var(--muted); border: 2px dashed var(--line); border-radius: 14px; display: grid; gap: 6px; justify-items: center; }
+.empty strong { color: var(--ink); font: 15px var(--font-display); text-transform: uppercase; }
+.radar { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--cyan); position: relative; overflow: hidden; margin-bottom: 6px; }
+.radar::after { content: ""; position: absolute; inset: 0; background: conic-gradient(from 0deg, rgba(0,240,255,.8), transparent 30%); animation: spin 2s linear infinite; }
 
-.reader { display: grid; gap: 10px; }
-.reader-head { display: grid; gap: 2px; }
-.reader-head .subj { font-family: var(--font-display); font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
+.reader { display: grid; gap: 12px; }
+.reader-head { display: grid; gap: 4px; }
+.reader-head .subj { font: 20px var(--font-display); overflow-wrap: anywhere; color: var(--acid); }
 .reader-head .from { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
-.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; }
 .links a {
-  font-size: 13px; color: var(--accent-2); border: 1px solid var(--line); border-radius: 999px;
-  padding: 4px 10px; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 13px var(--font-display); text-transform: uppercase; color: var(--void); background: var(--pink); text-decoration: none;
+  border-radius: 999px; padding: 8px 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  box-shadow: 0 0 18px rgba(255, 43, 214, .6);
 }
-.code-pill { font: 600 20px var(--font-mono); letter-spacing: .12em; padding: 6px 12px; border-radius: 6px; background: var(--chip); border: 1px solid var(--line); user-select: all; }
-iframe.body { width: 100%; min-height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font-mono); margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.code-pill {
+  font: 700 30px var(--font-mono); letter-spacing: .2em; padding: 8px 16px; border-radius: 12px; user-select: all;
+  color: var(--void); background: var(--acid); box-shadow: 6px 6px 0 var(--cyan);
+}
+iframe.body { width: 100%; min-height: 420px; border: 2px solid var(--line); border-radius: 14px; background: #fff; }
+pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font-mono); margin: 0; padding: 14px; border: 2px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.4); }
 
-.notes { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
-.notes p { margin: 0; max-width: 72ch; }
+.notes { display: grid; gap: 8px; font-size: 13px; color: var(--muted); padding: 16px 18px; border-radius: 14px; background: rgba(0,0,0,.45); }
+.notes p { margin: 0; max-width: 76ch; }
+.notes a { color: var(--cyan); }
+
+@keyframes flow { to { background-position: 300% 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes run { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+@keyframes pop { 0% { transform: scale(.6) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.06) rotate(1deg); opacity: 1; } 100% { transform: none; } }
+.dot.live { animation: pulse 1.4s ease-in-out infinite; }
+.pop { animation: pop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
 </head>
 <body>
+<canvas id="plasma" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<div class="ticker" aria-hidden="true"><span>✦ MAILS TEMPORALES REALES ✦ AL TOQUE ✦ SIN REGISTRO ✦ RECIBÍ EL CÓDIGO ACÁ ✦ CERO SPAM EN TU MAIL POSTA ✦ </span><span>✦ MAILS TEMPORALES REALES ✦ AL TOQUE ✦ SIN REGISTRO ✦ RECIBÍ EL CÓDIGO ACÁ ✦ CERO SPAM EN TU MAIL POSTA ✦ </span></div>
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Correo temporal gratuito</span>
+    <span class="eyebrow">Correo temporal · gratis</span>
     <h1>Generador de correos<span class="at">@</span></h1>
-    <p class="lede">Crea una dirección real en un segundo, úsala para registrarte y recibe aquí el correo de verificación. Sin cuenta ni contraseña que recordar.</p>
+    <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
   </header>
 
   <section class="sheet" aria-labelledby="t-dir">
-    <div class="airmail" aria-hidden="true"></div>
-
+    <div class="sheet-in">
     <div class="block">
       <span class="label" id="t-dir">Tu dirección</span>
       <div class="address-row">
-        <div class="address" id="address">Creando dirección…</div>
-        <button class="btn" type="button" id="copy">Copiar</button>
+        <div class="address" id="address">Cocinando tu mail…</div>
+        <button class="btn primary" type="button" id="copy">Copiar</button>
       </div>
       <div class="meta" id="meta" hidden>
         <span>Contraseña del buzón: <code id="pass"></code></span>
@@ -154,24 +218,24 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
     </div>
 
     <form class="block" id="new-form">
-      <span class="label">Nueva dirección</span>
+      <span class="label">Otra dirección</span>
       <div class="row">
         <div class="custom">
-          <input type="text" id="user" placeholder="nombre (opcional)" autocomplete="off" aria-label="Nombre de usuario" maxlength="40">
+          <input type="text" id="user" placeholder="elegí un nombre (opcional)" autocomplete="off" aria-label="Nombre de usuario" maxlength="40">
           <select id="domain" aria-label="Dominio"></select>
         </div>
-        <button class="btn primary" type="submit" id="create">Crear dirección</button>
-        <button class="btn" type="button" id="delete">Eliminar buzón</button>
+        <button class="btn" type="submit" id="create">Crear otro</button>
+        <button class="btn ghost" type="button" id="delete">Borrar buzón</button>
       </div>
     </form>
 
     <div class="block" id="inbox-block">
       <div class="inbox-head">
-        <h2>Bandeja de entrada</h2>
+        <h2>Bandeja</h2>
         <button class="btn small" type="button" id="refresh">Actualizar</button>
       </div>
       <ul class="msgs" id="msgs" hidden></ul>
-      <div class="empty" id="empty"><strong>Aún no hay mensajes</strong>Los correos que lleguen a esta dirección aparecerán aquí solos. Revisamos cada 5 segundos.</div>
+      <div class="empty" id="empty"><div class="radar" aria-hidden="true"></div><strong>Esperando mails…</strong>Lo que llegue a esta dirección aparece acá solo. Revisamos cada 5 segundos.</div>
     </div>
 
     <div class="block reader" id="reader" hidden>
@@ -180,18 +244,74 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
         <div class="subj" id="r-subj"></div>
         <div class="from" id="r-from"></div>
       </div>
-      <div class="row" id="r-code-row" hidden><span class="label">Código detectado</span><span class="code-pill" id="r-code"></span></div>
+      <div class="row" id="r-code-row" hidden><span class="label">Código detectado</span><span class="code-pill pop" id="r-code"></span></div>
       <div class="links" id="r-links"></div>
       <iframe class="body" id="r-html" title="Contenido del correo" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
       <pre class="body" id="r-text" hidden></pre>
     </div>
+    </div>
   </section>
 
   <div class="notes">
-    <p>Las direcciones y los mensajes los proporciona el servicio público <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>. El buzón queda guardado en este navegador; si lo borras o cambias de dispositivo, pierdes el acceso.</p>
-    <p>Algunas páginas bloquean los correos temporales. Úsalo para pruebas y para registros donde no quieras dar tu correo personal, no para cuentas importantes que necesites recuperar.</p>
+    <p>Las direcciones y los mensajes los da el servicio público <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>. El buzón queda guardado en este navegador: si borrás los datos o cambiás de dispositivo, lo perdés.</p>
+    <p>Algunas páginas bloquean los mails temporales. Usalo para pruebas y registros donde no quieras dar tu mail personal, no para cuentas importantes que tengas que recuperar.</p>
   </div>
 </div>
+
+<script>
+/* ---------- Efectos: plasma de fondo y confeti ---------- */
+(function () {
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cv = document.getElementById("plasma"), ctx = cv.getContext("2d");
+  const W = 96, H = 64; cv.width = W; cv.height = H;
+  const img = ctx.createImageData(W, H);
+  const pal = [];
+  for (let i = 0; i < 256; i++) {
+    const t = i / 256 * Math.PI * 2;
+    pal.push([ (Math.sin(t) * .5 + .5) * 255, (Math.sin(t + 2.1) * .5 + .5) * 120, (Math.sin(t + 4.2) * .5 + .5) * 255 ]);
+  }
+  function frame(ms) {
+    const t = ms / 1000;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const v = Math.sin(x / 9 + t) + Math.sin((y / 7 + t * .7)) + Math.sin((x + y) / 13 + t * .5) + Math.sin(Math.hypot(x - W / 2, y - H / 2) / 6 - t * 1.3);
+      const c = pal[((v + 4) * 32 + t * 30) & 255], k = (y * W + x) * 4;
+      img.data[k] = c[0] * .55; img.data[k + 1] = c[1] * .35; img.data[k + 2] = c[2] * .6; img.data[k + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    if (!calm && !document.hidden) requestAnimationFrame(frame);
+  }
+  frame(0);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !calm) requestAnimationFrame(frame); });
+  cv.style.imageRendering = "auto"; cv.style.filter = "blur(18px) saturate(1.4)"; cv.style.transform = "scale(1.1)";
+
+  const cf = document.getElementById("confetti"), c2 = cf.getContext("2d");
+  let bits = [], running = false;
+  const colors = ["#ff2bd6", "#ff8a00", "#c6ff00", "#00f0ff", "#8b5cff", "#fff6fe"];
+  function size() { cf.width = innerWidth * devicePixelRatio; cf.height = innerHeight * devicePixelRatio; }
+  addEventListener("resize", size); size();
+  window.boom = function (el) {
+    if (calm) return;
+    const r = el ? el.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 3, width: 0, height: 0 };
+    const x = (r.left + r.width / 2) * devicePixelRatio, y = (r.top + r.height / 2) * devicePixelRatio;
+    for (let i = 0; i < 90; i++) {
+      const a = Math.random() * Math.PI * 2, s = (3 + Math.random() * 9) * devicePixelRatio;
+      bits.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 6 * devicePixelRatio, r: Math.random() * 6, vr: Math.random() * .4 - .2,
+        w: (5 + Math.random() * 7) * devicePixelRatio, h: (3 + Math.random() * 4) * devicePixelRatio, c: colors[i % colors.length], life: 90 + Math.random() * 40 });
+    }
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  };
+  function tick() {
+    c2.clearRect(0, 0, cf.width, cf.height);
+    bits = bits.filter((b) => b.life-- > 0);
+    for (const b of bits) {
+      b.vy += .35 * devicePixelRatio; b.vx *= .985; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      c2.save(); c2.translate(b.x, b.y); c2.rotate(b.r); c2.globalAlpha = Math.min(1, b.life / 30);
+      c2.fillStyle = b.c; c2.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); c2.restore();
+    }
+    if (bits.length) requestAnimationFrame(tick); else { running = false; c2.clearRect(0, 0, cf.width, cf.height); }
+  }
+})();
+</script>
 
 <script>
 (function () {
@@ -205,6 +325,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
   let domains = [];
   let timer = null;
   let seen = new Set();
+  let primed = false;      // evita festejar mensajes viejos al cargar
 
   /* ---------- API ---------- */
   async function api(path, opts = {}) {
@@ -274,15 +395,15 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
         const created = await api("/accounts", { method: "POST", body: { address, password }, noAuth: true });
         const tok = await api("/token", { method: "POST", body: { address, password }, noAuth: true });
         acct = { id: created.id || tok.id, address, password, token: tok.token, created: Date.now() };
-        save(); seen = new Set(); return;
+        save(); seen = new Set(); primed = false; return;
       } catch (e) {
         if (e.status === 422 && !user) { name = randomUser(); continue; }
-        if (e.status === 422) throw new Error("Esa dirección ya está ocupada. Prueba con otro nombre.");
-        if (e.status === 429) throw new Error("Demasiadas solicitudes. Espera unos segundos y vuelve a intentarlo.");
+        if (e.status === 422) throw new Error("Esa dirección ya está ocupada. Probá con otro nombre.");
+        if (e.status === 429) throw new Error("Demasiadas solicitudes. Esperá unos segundos y probá de nuevo.");
         throw e;
       }
     }
-    throw new Error("No se pudo crear la dirección. Inténtalo de nuevo.");
+    throw new Error("No se pudo crear la dirección. Probá de nuevo.");
   }
 
   async function relogin() {
@@ -327,6 +448,8 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
       b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       li.appendChild(b); ul.appendChild(li);
     });
+    if (fresh.length && primed && window.boom) window.boom();
+    primed = true;
     if (fresh.length && document.hidden) document.title = "(" + fresh.length + ") Generador de Correos";
   }
 
@@ -378,7 +501,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
   $("copy").addEventListener("click", (e) => {
     if (!acct) return;
     const btn = e.currentTarget;
-    const ok = () => { btn.textContent = "Copiado"; btn.classList.add("done"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+    const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
     const fb = () => { const r = document.createRange(); r.selectNodeContents($("address")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Pulsa Ctrl+C"; };
     try { navigator.clipboard.writeText(acct.address).then(ok, fb); } catch (err) { fb(); }
   });
@@ -391,7 +514,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
     busy(true); stopPolling(); status("Creando dirección…");
     try {
       await createAccount(user);
-      $("user").value = ""; showAccount(); renderInbox([]); $("back").click(); startPolling();
+      $("user").value = ""; showAccount(); if (window.boom) window.boom($("address")); renderInbox([]); $("back").click(); startPolling();
     } catch (err) { status(err.message, true); if (acct) startPolling(); }
     finally { busy(false); }
   });
@@ -400,8 +523,8 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
   $("delete").addEventListener("click", async (e) => {
     if (!acct) return;
     const btn = e.currentTarget;
-    if (!confirmDelete) { confirmDelete = true; btn.textContent = "¿Seguro? Pulsa otra vez"; setTimeout(() => { confirmDelete = false; btn.textContent = "Eliminar buzón"; }, 4000); return; }
-    confirmDelete = false; btn.textContent = "Eliminar buzón";
+    if (!confirmDelete) { confirmDelete = true; btn.textContent = "¿Seguro? Tocá de nuevo"; setTimeout(() => { confirmDelete = false; btn.textContent = "Borrar buzón"; }, 4000); return; }
+    confirmDelete = false; btn.textContent = "Borrar buzón";
     busy(true); stopPolling(); status("Eliminando buzón…");
     try { await api("/accounts/" + encodeURIComponent(acct.id), { method: "DELETE" }); } catch (err) {}
     acct = null; clear(); showAccount(); renderInbox([]); $("back").click();
@@ -425,14 +548,14 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
         showAccount(); status("Recuperando tu buzón…");
         try { await relogin(); } catch (e) { acct = null; clear(); }
       }
-      if (!acct) { status("Creando dirección…"); await createAccount(""); }
+      if (!acct) { status("Cocinando tu mail…"); await createAccount(""); }
       showAccount(); startPolling();
     } catch (e) {
       $("address").textContent = "No disponible";
       const blocked = /fetch|network|load/i.test(e.message);
       status(blocked
-        ? "El navegador bloqueó la conexión con el servicio de correo. Abre la página publicada (por ejemplo tu dirección de Vercel) en una pestaña normal y desactiva el bloqueador de anuncios para este sitio."
-        : "No se pudo conectar con el servicio de correo (" + e.message + "). Recarga la página.", true);
+        ? "El navegador bloqueó la conexión con el servicio de correo. Abrí la página publicada (tu dirección de Vercel) en una pestaña normal y desactivá el bloqueador de anuncios para este sitio."
+        : "No se pudo conectar con el servicio de correo (" + e.message + "). Recargá la página.", true);
     } finally { busy(false); }
   })();
 })();

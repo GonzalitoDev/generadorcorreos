@@ -38,7 +38,7 @@ html { background: var(--void); overflow-x: clip; }
 body {
   margin: 0; min-height: 100vh; background: var(--void); color: var(--ink);
   font-family: var(--font-body); font-size: 16px; line-height: 1.5;
-  padding-inline: 16px; padding-block: 0 56px; overflow-x: hidden;
+  padding-inline: 16px; padding-block: 0 150px; overflow-x: hidden;
 }
 #plasma { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 .grain {
@@ -176,6 +176,55 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
 .notes p { margin: 0; max-width: 76ch; }
 .notes a { color: var(--cyan); }
 
+/* Juguetes */
+.toys { display: flex; gap: 10px; flex-wrap: wrap; }
+.toy {
+  font: 12px var(--font-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer;
+  color: var(--ink); background: rgba(0,0,0,.45); border: 2px solid var(--line); border-radius: 999px; padding: 8px 14px;
+  transition: transform .12s, border-color .12s, background .12s;
+}
+.toy:hover { transform: rotate(-3deg) scale(1.05); border-color: var(--acid); }
+.toy[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: var(--void); box-shadow: 0 0 18px rgba(255,43,214,.7); }
+.dice { font-size: 11px; }
+.dice.roll { animation: roll .5s cubic-bezier(.3,1.6,.5,1); }
+h1 { cursor: pointer; }
+h1.wobble { animation: flow 6s linear infinite, wobble .7s ease; }
+.wait-line { font-weight: 700; color: var(--acid); min-height: 1.5em; }
+
+.buddy {
+  position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 40; width: 92px; cursor: pointer; background: none; border: 0; padding: 0;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); animation: bob 2.6s ease-in-out infinite;
+}
+.buddy svg { width: 100%; height: auto; display: block; overflow: visible; }
+.buddy.jump { animation: jump .7s cubic-bezier(.3,1.6,.5,1); }
+.buddy .mouth-o { display: none; }
+.buddy.happy .mouth-o { display: inline; }
+.buddy.happy .mouth-smile { display: none; }
+.bubble {
+  position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 41;
+  max-width: min(260px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 16px 16px 4px 16px;
+  font: 700 14px var(--font-body); color: var(--void); background: var(--acid); border: 2px solid var(--void); box-shadow: 5px 5px 0 var(--pink);
+  transform-origin: bottom right;
+}
+@media (max-width: 520px) { .buddy { width: 66px; } .bubble { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); font-size: 13px; } }
+.bubble.show { animation: pop .4s cubic-bezier(.2,1.4,.4,1) both; }
+.spark { position: fixed; z-index: 45; pointer-events: none; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; animation: spark .8s ease-out forwards; }
+
+body.party .wrap { animation: hue 3s linear infinite; }
+body.party .ticker span { animation-duration: 5s; }
+body.party .sheet::before { animation-duration: 1.4s; }
+body.party h1 { animation: flow 1.2s linear infinite, shake .35s ease-in-out infinite; }
+body.party .buddy { animation: dance .5s ease-in-out infinite; }
+
+@keyframes bob { 50% { transform: translateY(-8px) rotate(3deg); } }
+@keyframes jump { 0% { transform: none; } 40% { transform: translateY(-60px) rotate(-12deg) scale(1.15); } 70% { transform: translateY(0) scale(1.1, .85); } 100% { transform: none; } }
+@keyframes dance { 0%, 100% { transform: rotate(-12deg) translateY(0); } 50% { transform: rotate(12deg) translateY(-14px); } }
+@keyframes wobble { 20% { transform: rotate(-3deg) scale(1.04); } 40% { transform: rotate(3deg); } 60% { transform: rotate(-2deg) scale(.98); } 80% { transform: rotate(1deg); } }
+@keyframes shake { 25% { transform: translate(-2px, 1px) rotate(-1deg); } 75% { transform: translate(2px, -1px) rotate(1deg); } }
+@keyframes hue { to { filter: hue-rotate(360deg); } }
+@keyframes roll { from { transform: rotate(-360deg) scale(.5); } }
+@keyframes spark { to { transform: translateY(26px) scale(0); opacity: 0; } }
 @keyframes flow { to { background-position: 300% 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes run { from { transform: translateX(0); } to { transform: translateX(-100%); } }
@@ -199,6 +248,10 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
   <header>
     <span class="eyebrow">Correo temporal · gratis</span>
     <h1>Generador de correos<span class="at">@</span></h1>
+    <div class="toys">
+      <button class="toy" type="button" id="party" aria-pressed="false">Modo fiesta</button>
+      <button class="toy" type="button" id="sound" aria-pressed="true">Sonido: sí</button>
+    </div>
     <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
   </header>
 
@@ -224,6 +277,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
           <input type="text" id="user" placeholder="elegí un nombre (opcional)" autocomplete="off" aria-label="Nombre de usuario" maxlength="40">
           <select id="domain" aria-label="Dominio"></select>
         </div>
+        <button class="btn small dice" type="button" id="dice" title="Inventa un nombre al azar">Nombre loco</button>
         <button class="btn" type="submit" id="create">Crear otro</button>
         <button class="btn ghost" type="button" id="delete">Borrar buzón</button>
       </div>
@@ -235,7 +289,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
         <button class="btn small" type="button" id="refresh">Actualizar</button>
       </div>
       <ul class="msgs" id="msgs" hidden></ul>
-      <div class="empty" id="empty"><div class="radar" aria-hidden="true"></div><strong>Esperando mails…</strong>Lo que llegue a esta dirección aparece acá solo. Revisamos cada 5 segundos.</div>
+      <div class="empty" id="empty"><div class="radar" aria-hidden="true"></div><strong>Esperando mails…</strong><span class="wait-line" id="wait-line">Consultando con los aliens…</span>Lo que llegue a esta dirección aparece acá solo. Revisamos cada 5 segundos.</div>
     </div>
 
     <div class="block reader" id="reader" hidden>
@@ -258,6 +312,20 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
   </div>
 </div>
 
+<button class="buddy" type="button" id="buddy" aria-label="Carta, la mascota. Tocala.">
+  <svg viewBox="0 0 120 100" aria-hidden="true">
+    <rect x="6" y="18" width="108" height="76" rx="14" fill="#fff6fe" stroke="#12002b" stroke-width="4"/>
+    <path d="M10 26 L60 60 L110 26" fill="none" stroke="#12002b" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="22" cy="74" r="7" fill="#ff2bd6" opacity=".6"/><circle cx="98" cy="74" r="7" fill="#ff2bd6" opacity=".6"/>
+    <circle cx="40" cy="70" r="10" fill="#fff" stroke="#12002b" stroke-width="3"/><circle cx="80" cy="70" r="10" fill="#fff" stroke="#12002b" stroke-width="3"/>
+    <circle class="pupil" cx="40" cy="70" r="4.5" fill="#12002b"/><circle class="pupil" cx="80" cy="70" r="4.5" fill="#12002b"/>
+    <path class="mouth-smile" d="M52 82 Q60 90 68 82" fill="none" stroke="#12002b" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse class="mouth-o" cx="60" cy="85" rx="5" ry="6" fill="#12002b"/>
+    <path d="M60 6 L64 14 L60 12 L56 14 Z" fill="#c6ff00" stroke="#12002b" stroke-width="2"/>
+  </svg>
+</button>
+<div class="bubble" id="bubble" role="status" aria-live="polite" hidden></div>
+
 <script>
 /* ---------- Efectos: plasma de fondo y confeti ---------- */
 (function () {
@@ -270,8 +338,10 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
     const t = i / 256 * Math.PI * 2;
     pal.push([ (Math.sin(t) * .5 + .5) * 255, (Math.sin(t + 2.1) * .5 + .5) * 120, (Math.sin(t + 4.2) * .5 + .5) * 255 ]);
   }
+  let T = 0, last = 0;
   function frame(ms) {
-    const t = ms / 1000;
+    T += Math.min(.1, Math.max(0, (ms - last) / 1000)) * (document.body.classList.contains("party") ? 5 : 1); last = ms;
+    const t = T;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const v = Math.sin(x / 9 + t) + Math.sin((y / 7 + t * .7)) + Math.sin((x + y) / 13 + t * .5) + Math.sin(Math.hypot(x - W / 2, y - H / 2) / 6 - t * 1.3);
       const c = pal[((v + 4) * 32 + t * 30) & 255], k = (y * W + x) * 4;
@@ -310,6 +380,131 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
     }
     if (bits.length) requestAnimationFrame(tick); else { running = false; c2.clearRect(0, 0, cf.width, cf.height); }
   }
+
+  /* ---------- Sonidos (sintetizados, sin archivos) ---------- */
+  let ac = null, soundOn = true;
+  try { soundOn = localStorage.getItem("gc-sound") !== "0"; } catch (e) {}
+  function tone(freqs, dur, type, slide) {
+    if (!soundOn) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      freqs.forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * dur * .8;
+        o.type = type || "square"; o.frequency.setValueAtTime(f, t0);
+        if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t0 + dur);
+        g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.08, t0 + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+        o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + .02);
+      });
+    } catch (e) {}
+  }
+  const sfx = {
+    mail: () => tone([523, 659, 784, 1047], .12, "square"),
+    pop: () => tone([880], .08, "triangle", 1.8),
+    boing: () => tone([180], .35, "sine", 3.2),
+    dice: () => tone([300, 420, 360, 520], .05, "square"),
+    party: () => tone([130, 196, 261, 392, 523], .09, "sawtooth"),
+  };
+
+  /* ---------- Carta, la mascota ---------- */
+  const buddy = document.getElementById("buddy"), bubble = document.getElementById("bubble");
+  let bubbleT = null;
+  function say(text, ms) {
+    bubble.textContent = text; bubble.hidden = false;
+    bubble.classList.remove("show"); void bubble.offsetWidth; bubble.classList.add("show");
+    clearTimeout(bubbleT); bubbleT = setTimeout(() => { bubble.hidden = true; }, ms || 3200);
+  }
+  function jump(happy) {
+    buddy.classList.remove("jump"); void buddy.offsetWidth; buddy.classList.add("jump");
+    if (happy) { buddy.classList.add("happy"); setTimeout(() => buddy.classList.remove("happy"), 1600); }
+  }
+  buddy.addEventListener("animationend", () => buddy.classList.remove("jump"));
+  const CHAMUYO = [
+    "¡Hola! Soy Carta. Vivo acá y como spam.",
+    "Si me tocás de nuevo, te cobro el envío.",
+    "Dato: este mail se autodestruye si borrás el navegador.",
+    "Dale, registrate en algo. Te espero con el código.",
+    "Estoy nervioso, nunca me llega nada lindo.",
+    "¿Probaste el modo fiesta? Es medio ilegal.",
+    "Escribí «falopa» en cualquier lado de la página. No te digo más.",
+    "Mi primo es un telegrama. Está viejito.",
+    "Cero spam en tu mail posta. De nada.",
+  ];
+  let pokes = 0;
+  buddy.addEventListener("click", () => {
+    pokes++; jump(true); sfx.boing(); window.boom(buddy);
+    say(pokes > 6 && pokes % 7 === 0 ? "¡BASTA! Me mareaste 😵" : CHAMUYO[Math.floor(Math.random() * CHAMUYO.length)]);
+  });
+  // Los ojos siguen al cursor
+  const pupils = [...buddy.querySelectorAll(".pupil")];
+  addEventListener("pointermove", (e) => {
+    const r = buddy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * .7;
+    const a = Math.atan2(e.clientY - cy, e.clientX - cx), d = Math.min(4, Math.hypot(e.clientX - cx, e.clientY - cy) / 40);
+    pupils.forEach((p) => p.setAttribute("transform", "translate(" + (Math.cos(a) * d).toFixed(1) + " " + (Math.sin(a) * d).toFixed(1) + ")"));
+  }, { passive: true });
+
+  /* ---------- Estela de chispas ---------- */
+  let lastSpark = 0;
+  const sparkColors = ["#ff2bd6", "#c6ff00", "#00f0ff", "#ff8a00", "#8b5cff"];
+  if (!calm) addEventListener("pointermove", (e) => {
+    const now = performance.now(); if (now - lastSpark < 28) return; lastSpark = now;
+    const s = document.createElement("span"); s.className = "spark";
+    s.style.left = e.clientX + "px"; s.style.top = e.clientY + "px";
+    s.style.background = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+    s.style.boxShadow = "0 0 8px " + s.style.background;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 800);
+  }, { passive: true });
+
+  /* ---------- Modo fiesta y sonido ---------- */
+  const partyBtn = document.getElementById("party"), soundBtn = document.getElementById("sound");
+  function setParty(on) {
+    document.body.classList.toggle("party", on); partyBtn.setAttribute("aria-pressed", on);
+    partyBtn.textContent = on ? "Fiesta: ON" : "Modo fiesta";
+    if (on) { sfx.party(); window.boom(); setTimeout(() => window.boom(), 250); say("¡UNTZ UNTZ UNTZ! 🪩"); jump(true); }
+  }
+  partyBtn.addEventListener("click", () => setParty(!document.body.classList.contains("party")));
+  function paintSound() { soundBtn.setAttribute("aria-pressed", soundOn); soundBtn.textContent = soundOn ? "Sonido: sí" : "Sonido: no"; }
+  soundBtn.addEventListener("click", () => { soundOn = !soundOn; paintSound(); try { localStorage.setItem("gc-sound", soundOn ? "1" : "0"); } catch (e) {} sfx.pop(); });
+  paintSound();
+
+  /* ---------- Título que baila ---------- */
+  const h1 = document.querySelector("h1");
+  h1.addEventListener("click", () => { h1.classList.remove("wobble"); void h1.offsetWidth; h1.classList.add("wobble"); window.boom(h1); sfx.pop(); });
+  h1.addEventListener("animationend", (e) => { if (e.animationName === "wobble") h1.classList.remove("wobble"); });
+
+  /* ---------- Easter egg: escribir «falopa» ---------- */
+  let typed = "";
+  addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input, select, textarea")) return;
+    typed = (typed + (e.key || "").toLowerCase()).slice(-6);
+    if (typed === "falopa") { setParty(true); for (let i = 0; i < 5; i++) setTimeout(() => window.boom(), i * 180); say("🤯 Desbloqueaste el modo FALOPA TOTAL", 4000); typed = ""; }
+  });
+
+  /* ---------- Dado de nombres locos ---------- */
+  const COSAS = ["milanesa", "carpincho", "pinguino", "alfajor", "empanada", "mapache", "dinosaurio", "fideo", "choripan", "ovni", "tortuga", "llama", "mate", "gato", "pato", "zapallo", "chancleta", "tostada"];
+  const ONDA = ["turbo", "cosmico", "galactico", "ninja", "fachero", "electrico", "dorado", "supersonico", "picante", "mistico", "salvaje", "cuantico", "fosforito", "rebelde"];
+  const dice = document.getElementById("dice"), userIn = document.getElementById("user");
+  dice.addEventListener("click", () => {
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    userIn.value = pick(COSAS) + pick(ONDA) + Math.floor(10 + Math.random() * 90);
+    dice.classList.remove("roll"); void dice.offsetWidth; dice.classList.add("roll");
+    sfx.dice(); say("¿Te gusta «" + userIn.value + "»? Tocá «Crear otro».", 2800);
+  });
+
+  /* ---------- Frases mientras esperás ---------- */
+  const ESPERA = ["Consultando con los aliens…", "Sobornando al cartero…", "Calentando el horno de mails…", "Revisando debajo del felpudo…",
+    "Hackeando la matrix (mentira)…", "Esperando que tu crush te escriba…", "Haciendo girar el radar a mano…", "Contando palomas mensajeras…"];
+  const waitLine = document.getElementById("wait-line");
+  let wi = 0;
+  setInterval(() => { if (!document.getElementById("empty").hidden) { wi = (wi + 1) % ESPERA.length; waitLine.textContent = ESPERA[wi]; } }, 3000);
+
+  window.fx = {
+    say, jump,
+    mail(n) { jump(true); sfx.mail(); window.boom(); say(n > 1 ? "¡Te llegaron " + n + " mails! 📬" : "¡Te llegó un mail! 📬 Tocalo para abrirlo."); },
+    copied() { sfx.pop(); say("¡Copiado! Pegalo donde te quieras registrar."); },
+    created() { sfx.mail(); jump(true); say("Mail nuevito, recién salido del horno 🔥"); },
+    code(c) { sfx.mail(); window.boom(document.getElementById("r-code")); say("¡Código " + c + "! Copialo y pegalo en la página."); },
+  };
+  setTimeout(() => say("¡Hola! Soy Carta 💌 Ya te armé un mail. Tocame si te aburrís."), 1400);
 })();
 </script>
 
@@ -448,7 +643,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
       b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       li.appendChild(b); ul.appendChild(li);
     });
-    if (fresh.length && primed && window.boom) window.boom();
+    if (fresh.length && primed && window.fx) window.fx.mail(fresh.length);
     primed = true;
     if (fresh.length && document.hidden) document.title = "(" + fresh.length + ") Generador de Correos";
   }
@@ -479,6 +674,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
       $("r-from").textContent = "De: " + ((m.from && (m.from.name ? m.from.name + " <" + m.from.address + ">" : m.from.address)) || "desconocido") + " · " + new Date(m.createdAt).toLocaleString("es");
       const code = findCode(text || html.replace(/<[^>]+>/g, " "));
       $("r-code").textContent = code; $("r-code-row").hidden = !code;
+      if (code && window.fx) setTimeout(() => window.fx.code(code), 150);
       const links = findLinks(text, html);
       $("r-links").innerHTML = "";
       links.forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
@@ -501,7 +697,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
   $("copy").addEventListener("click", (e) => {
     if (!acct) return;
     const btn = e.currentTarget;
-    const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+    const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); if (window.fx) window.fx.copied(); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
     const fb = () => { const r = document.createRange(); r.selectNodeContents($("address")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Pulsa Ctrl+C"; };
     try { navigator.clipboard.writeText(acct.address).then(ok, fb); } catch (err) { fb(); }
   });
@@ -514,7 +710,7 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
     busy(true); stopPolling(); status("Creando dirección…");
     try {
       await createAccount(user);
-      $("user").value = ""; showAccount(); if (window.boom) window.boom($("address")); renderInbox([]); $("back").click(); startPolling();
+      $("user").value = ""; showAccount(); if (window.boom) window.boom($("address")); if (window.fx) window.fx.created(); renderInbox([]); $("back").click(); startPolling();
     } catch (err) { status(err.message, true); if (acct) startPolling(); }
     finally { busy(false); }
   });

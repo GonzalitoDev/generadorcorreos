@@ -6,6 +6,7 @@
 <title>Generador de Correos</title>
 <meta name="description" content="Mails temporales reales, al toque. Recibí el código de verificación acá y registrate donde quieras.">
 <meta name="theme-color" content="#12002b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%92%8C%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=Rubik+Mono+One&family=Syne:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -569,8 +570,11 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
   async function loadDomains() {
     let data;
     if (useProxy) {
-      try { data = await api("/domains?page=1", { noAuth: true }); if (!data) throw new Error("vacío"); }
-      catch (e) { useProxy = false; }
+      try { data = await api("/domains?page=1", { noAuth: true }); if (!data) throw Object.assign(new Error("vacío"), { status: 404 }); }
+      catch (e) {
+        // Solo vamos directo si el proxy no existe (hosting estático). Si existe pero falla, mostramos su error.
+        if (e.status === 404 || e.status === 405) useProxy = false; else throw e;
+      }
     }
     if (!useProxy) data = await api("/domains?page=1", { noAuth: true });
     const list = members(data).filter((d) => d.isActive !== false && d.isPrivate !== true);
@@ -748,7 +752,7 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
       showAccount(); startPolling();
     } catch (e) {
       $("address").textContent = "No disponible";
-      const blocked = /fetch|network|load/i.test(e.message);
+      const blocked = /failed to fetch|networkerror|load failed/i.test(e.message);
       status(blocked
         ? "El navegador bloqueó la conexión con el servicio de correo. Abrí la página publicada (tu dirección de Vercel) en una pestaña normal y desactivá el bloqueador de anuncios para este sitio."
         : "No se pudo conectar con el servicio de correo (" + e.message + "). Recargá la página.", true);

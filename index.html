@@ -226,6 +226,31 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
 @keyframes hue { to { filter: hue-rotate(360deg); } }
 @keyframes roll { from { transform: rotate(-360deg) scale(.5); } }
 @keyframes spark { to { transform: translateY(26px) scale(0); opacity: 0; } }
+/* Más falopa */
+@property --h { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
+h1 { background: none; color: var(--ink); -webkit-text-fill-color: currentColor; filter: none; animation: hues 4s linear infinite; }
+h1 .l {
+  display: inline-block; white-space: pre; color: hsl(calc(var(--i) * 23deg + var(--h)) 100% 66%);
+  text-shadow: 0 0 14px currentColor, 0 0 34px currentColor; animation: wave 1.8s ease-in-out infinite; animation-delay: calc(var(--i) * -.09s);
+}
+h1 .w { display: inline-block; white-space: nowrap; }
+body.party h1 { animation: hues .8s linear infinite; }
+body.party h1 .l { animation-duration: .6s; }
+h1.wobble { animation: hues 4s linear infinite, wobble .7s ease; }
+.ticker.rev { background: var(--pink); color: var(--void); transform: rotate(1.4deg) translateY(4px) scale(1.03); margin-top: 6px; }
+.ticker.rev span { animation-direction: reverse; animation-duration: 22s; }
+#floaters { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+#floaters span { position: absolute; bottom: -60px; font-size: var(--s); opacity: .55; animation: floatUp var(--d) linear infinite; animation-delay: var(--dl); filter: drop-shadow(0 0 10px rgba(255,255,255,.4)); }
+.sticker { position: fixed; z-index: 44; pointer-events: none; font-size: 34px; margin: -20px 0 0 -20px; animation: sticker 1.1s cubic-bezier(.2,1.5,.4,1) forwards; }
+.rain { position: fixed; top: -50px; z-index: 44; pointer-events: none; font-size: 30px; animation: rain var(--d) linear forwards; }
+body.trip .wrap > * { filter: url(#trip-fx); }
+body.trip #plasma { filter: blur(10px) saturate(2.2) hue-rotate(90deg) !important; }
+body.trip .buddy svg { animation: spin 3s linear infinite; }
+@keyframes hues { to { --h: 360deg; } }
+@keyframes wave { 50% { transform: translateY(-.12em) rotate(-4deg) scale(1.06); } }
+@keyframes floatUp { from { transform: translateY(0) rotate(0); } to { transform: translateY(-120vh) rotate(720deg); } }
+@keyframes sticker { 0% { transform: scale(0) rotate(-40deg); opacity: 1; } 40% { transform: scale(1.5) rotate(15deg); } 100% { transform: translateY(-70px) scale(.9) rotate(-10deg); opacity: 0; } }
+@keyframes rain { to { transform: translateY(115vh) rotate(540deg); } }
 @keyframes flow { to { background-position: 300% 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes run { from { transform: translateX(0); } to { transform: translateX(-100%); } }
@@ -242,8 +267,20 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
 <canvas id="plasma" aria-hidden="true"></canvas>
 <div class="grain" aria-hidden="true"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
+<div id="floaters" aria-hidden="true"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="trip-fx" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" result="n">
+      <animate attributeName="baseFrequency" dur="9s" values="0.012 0.02;0.02 0.008;0.012 0.02" repeatCount="indefinite"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G">
+      <animate attributeName="scale" dur="4s" values="10;26;10" repeatCount="indefinite"/>
+    </feDisplacementMap>
+  </filter>
+</svg>
 
 <div class="ticker" aria-hidden="true"><span>✦ MAILS TEMPORALES REALES ✦ AL TOQUE ✦ SIN REGISTRO ✦ RECIBÍ EL CÓDIGO ACÁ ✦ CERO SPAM EN TU MAIL POSTA ✦ </span><span>✦ MAILS TEMPORALES REALES ✦ AL TOQUE ✦ SIN REGISTRO ✦ RECIBÍ EL CÓDIGO ACÁ ✦ CERO SPAM EN TU MAIL POSTA ✦ </span></div>
+<div class="ticker rev" aria-hidden="true"><span>★ ESTO ES MUY FALOPA ★ TOCÁ A CARTA ★ ESCRIBÍ «FALOPA» ★ PROBÁ EL MODO VIAJE ★ EL MAIL MÁS LOCO DEL CONDADO ★ </span><span>★ ESTO ES MUY FALOPA ★ TOCÁ A CARTA ★ ESCRIBÍ «FALOPA» ★ PROBÁ EL MODO VIAJE ★ EL MAIL MÁS LOCO DEL CONDADO ★ </span></div>
 
 <div class="wrap">
   <header>
@@ -251,6 +288,7 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     <h1>Generador de correos<span class="at">@</span></h1>
     <div class="toys">
       <button class="toy" type="button" id="party" aria-pressed="false">Modo fiesta</button>
+      <button class="toy" type="button" id="trip" aria-pressed="false">Modo viaje</button>
       <button class="toy" type="button" id="sound" aria-pressed="true">Sonido: sí</button>
     </div>
     <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
@@ -265,7 +303,8 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
         <button class="btn primary" type="button" id="copy">Copiar</button>
       </div>
       <div class="meta" id="meta" hidden>
-        <span>Contraseña del buzón: <code id="pass"></code></span>
+        <span id="pass-wrap">Contraseña del buzón: <code id="pass"></code></span>
+        <span id="provider"></span>
         <span id="created"></span>
       </div>
       <div class="status" id="status"><span class="dot"></span><span id="status-text">Conectando…</span></div>
@@ -308,7 +347,7 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
   </section>
 
   <div class="notes">
-    <p>Las direcciones y los mensajes los da el servicio público <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>. El buzón queda guardado en este navegador: si borrás los datos o cambiás de dispositivo, lo perdés.</p>
+    <p>Las direcciones y los mensajes los dan los servicios públicos <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a> y <a href="https://www.guerrillamail.com" target="_blank" rel="noopener">Guerrilla Mail</a> (si uno falla, se usa el otro). En Guerrilla Mail los mensajes duran una hora y cualquiera que use el mismo nombre ve la misma bandeja: para eso, mejor dejá el nombre al azar. El buzón queda guardado en este navegador: si borrás los datos o cambiás de dispositivo, lo perdés.</p>
     <p>Algunas páginas bloquean los mails temporales. Usalo para pruebas y registros donde no quieras dar tu mail personal, no para cuentas importantes que tengas que recuperar.</p>
   </div>
 </div>
@@ -426,6 +465,8 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     "Dale, registrate en algo. Te espero con el código.",
     "Estoy nervioso, nunca me llega nada lindo.",
     "¿Probaste el modo fiesta? Es medio ilegal.",
+    "El modo viaje no lo recomienda ningún médico.",
+    "Tocá en cualquier lado de la página. Dale, animate.",
     "Escribí «falopa» en cualquier lado de la página. No te digo más.",
     "Mi primo es un telegrama. Está viejito.",
     "Cero spam en tu mail posta. De nada.",
@@ -477,7 +518,7 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
   addEventListener("keydown", (e) => {
     if (e.target.closest && e.target.closest("input, select, textarea")) return;
     typed = (typed + (e.key || "").toLowerCase()).slice(-6);
-    if (typed === "falopa") { setParty(true); for (let i = 0; i < 5; i++) setTimeout(() => window.boom(), i * 180); say("🤯 Desbloqueaste el modo FALOPA TOTAL", 4000); typed = ""; }
+    if (typed === "falopa") { setParty(true); if (!document.body.classList.contains("trip")) tripBtn.click(); rain(40); for (let i = 0; i < 5; i++) setTimeout(() => window.boom(), i * 180); say("🤯 Desbloqueaste el modo FALOPA TOTAL", 4000); typed = ""; }
   });
 
   /* ---------- Dado de nombres locos ---------- */
@@ -505,51 +546,211 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     created() { sfx.mail(); jump(true); say("Mail nuevito, recién salido del horno 🔥"); },
     code(c) { sfx.mail(); window.boom(document.getElementById("r-code")); say("¡Código " + c + "! Copialo y pegalo en la página."); },
   };
+  /* ---------- Título letra por letra ---------- */
+  (function splitTitle() {
+    const full = h1.childNodes[0] && h1.childNodes[0].nodeType === 3 ? h1.childNodes[0].textContent : "";
+    if (!full) return;
+    h1.setAttribute("aria-label", full.trim() + "@");
+    let i = 0;
+    const frag = document.createDocumentFragment();
+    full.split(/( )/).forEach((word) => {
+      if (word === " ") { frag.appendChild(document.createTextNode(" ")); return; }
+      const w = document.createElement("span"); w.className = "w"; w.setAttribute("aria-hidden", "true");
+      for (const ch of word) { const l = document.createElement("span"); l.className = "l"; l.style.setProperty("--i", i++); l.textContent = ch; w.appendChild(l); }
+      frag.appendChild(w);
+    });
+    h1.replaceChild(frag, h1.childNodes[0]);
+  })();
+
+  /* ---------- Emojis flotando ---------- */
+  const EMOJIS = ["🍄", "🌈", "👽", "🪩", "🦄", "💌", "✨", "🌀", "🔮", "🍭", "🛸", "🌵", "🐙", "🧉", "⭐", "🎈"];
+  const floaters = document.getElementById("floaters");
+  if (!calm) EMOJIS.forEach((e, k) => {
+    const sp = document.createElement("span"); sp.textContent = e;
+    sp.style.left = (k * 6.3 + Math.random() * 4) % 98 + "%";
+    sp.style.setProperty("--s", 22 + Math.random() * 30 + "px");
+    sp.style.setProperty("--d", 14 + Math.random() * 16 + "s");
+    sp.style.setProperty("--dl", -Math.random() * 30 + "s");
+    floaters.appendChild(sp);
+  });
+
+  /* ---------- Stickers al tocar cualquier lado ---------- */
+  const STICK = ["🍄", "🌈", "✨", "🦄", "🪩", "💥", "🌀", "👽", "🔥", "💖", "🤪", "⚡"];
+  addEventListener("pointerdown", (e) => {
+    if (calm || e.target.closest("button, a, input, select, textarea, iframe, .msg, .address, .buddy")) return;
+    const st = document.createElement("span"); st.className = "sticker";
+    st.textContent = STICK[Math.floor(Math.random() * STICK.length)];
+    st.style.left = e.clientX + "px"; st.style.top = e.clientY + "px";
+    document.body.appendChild(st); setTimeout(() => st.remove(), 1150);
+    tone([400 + Math.random() * 600], .06, "triangle", 1.5);
+  });
+
+  /* ---------- Lluvia de emojis ---------- */
+  function rain(n) {
+    if (calm) return;
+    for (let k = 0; k < (n || 26); k++) {
+      const r = document.createElement("span"); r.className = "rain";
+      r.textContent = ["💌", "📬", "✉️", "🌈", "✨", "🍄"][k % 6];
+      r.style.left = Math.random() * 100 + "vw"; r.style.setProperty("--d", 1.6 + Math.random() * 1.8 + "s");
+      r.style.animationDelay = Math.random() * .8 + "s";
+      document.body.appendChild(r); setTimeout(() => r.remove(), 4500);
+    }
+  }
+
+  /* ---------- Modo viaje ---------- */
+  const tripBtn = document.getElementById("trip");
+  tripBtn.addEventListener("click", () => {
+    const on = !document.body.classList.contains("trip");
+    document.body.classList.toggle("trip", on); tripBtn.setAttribute("aria-pressed", on);
+    tripBtn.textContent = on ? "Viaje: ON" : "Modo viaje";
+    if (on) { tone([220, 277, 330, 415, 554], .18, "sine", .5); say("Uuuh… todo se derrite 🌀🍄", 3000); rain(18); }
+  });
+
+  const mailFx = window.fx.mail;
+  window.fx.mail = (n) => { mailFx(n); rain(); };
+  window.fx.rain = rain;
+
   setTimeout(() => say("¡Hola! Soy Carta 💌 Ya te armé un mail. Tocame si te aburrís."), 1400);
 })();
 </script>
 
 <script>
 (function () {
-  const DIRECT = "https://api.mail.tm";
-  const PROXY = "/api/mail?path=";
-  // En Vercel usamos el proxy del mismo dominio; si no existe (otro hosting), vamos directo.
+  const $ = (id) => document.getElementById(id);
+  // En Vercel usamos los proxys del mismo dominio; si no existen (otro hosting o archivo local), vamos directo.
   let useProxy = /^https?:$/.test(location.protocol);
   const KEY = "gc-mailbox";
-  const $ = (id) => document.getElementById(id);
-  let acct = null;          // {id, address, password, token, created}
-  let domains = [];
+  let acct = null;          // { p: "mt" | "gm", address, created, ... }
+  let prov = null;          // proveedor activo
   let timer = null;
   let seen = new Set();
-  let primed = false;      // evita festejar mensajes viejos al cargar
-
-  /* ---------- API ---------- */
-  async function api(path, opts = {}) {
-    const method = opts.method || "GET";
-    const headers = { Accept: "application/json" };
-    if (opts.body) headers["Content-Type"] = method === "PATCH" && !useProxy ? "application/merge-patch+json" : "application/json";
-    if (acct && acct.token && !opts.noAuth) headers.Authorization = "Bearer " + acct.token;
-    const url = useProxy ? PROXY + encodeURIComponent(path) : DIRECT + path;
-    const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
-    if (res.status === 204) return null;
-    let data = null;
-    try { data = await res.json(); } catch (e) {}
-    if (!res.ok) { const err = new Error((data && (data.detail || data.message || data["hydra:description"])) || ("Error " + res.status)); err.status = res.status; throw err; }
-    return data;
-  }
-  const members = (d) => Array.isArray(d) ? d : (d && d["hydra:member"]) || [];
+  let primed = false;       // evita festejar mensajes viejos al cargar
 
   /* ---------- Helpers ---------- */
   const rand = (n) => { const a = "abcdefghijklmnopqrstuvwxyz0123456789"; let s = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (const x of b) s += a[x % a.length]; return s; };
   const WORDS = ["sol","luna","rio","nube","faro","cometa","brisa","zorro","lince","roble","coral","pixel","cielo","halcon","marea","tango","canela","trigo"];
   const randomUser = () => WORDS[Math.floor(Math.random() * WORDS.length)] + WORDS[Math.floor(Math.random() * WORDS.length)] + rand(3);
   const cleanUser = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9._-]/g, "").replace(/^[._-]+|[._-]+$/g, "");
+  const decode = (s) => { const t = document.createElement("textarea"); t.innerHTML = s || ""; return t.value; };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(acct)); } catch (e) {} };
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
   const clear = () => { try { localStorage.removeItem(KEY); } catch (e) {} };
-  const fmtTime = (iso) => { const d = new Date(iso); const today = new Date().toDateString() === d.toDateString();
+  const fmtTime = (d) => { d = new Date(d); const today = new Date().toDateString() === d.toDateString();
     return today ? d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("es", { day: "numeric", month: "short" }); };
+  const httpError = (msg, status) => Object.assign(new Error(msg), { status });
 
+  async function getJSON(url, init) {
+    const res = await fetch(url, init);
+    if (res.status === 204) return null;
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw httpError((data && (data.detail || data.message || data["hydra:description"] || data.error)) || ("Error " + res.status), res.status);
+    return data;
+  }
+
+  /* ---------- Proveedor 1: mail.tm ---------- */
+  const MT = {
+    id: "mt", name: "mail.tm",
+    call(path, opts = {}, a) {
+      const method = opts.method || "GET";
+      const headers = { Accept: "application/json" };
+      if (opts.body) headers["Content-Type"] = method === "PATCH" && !useProxy ? "application/merge-patch+json" : "application/json";
+      if (a && a.token) headers.Authorization = "Bearer " + a.token;
+      const url = useProxy ? "/api/mail?path=" + encodeURIComponent(path) : "https://api.mail.tm" + path;
+      return getJSON(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    },
+    async domains() {
+      const d = await this.call("/domains?page=1");
+      const list = (Array.isArray(d) ? d : (d && d["hydra:member"]) || []).filter((x) => x.isActive !== false && x.isPrivate !== true).map((x) => x.domain);
+      if (!list.length) throw httpError("mail.tm no tiene dominios disponibles", 503);
+      return list;
+    },
+    async create(user, domain) {
+      const password = rand(14);
+      let name = user || randomUser();
+      for (let i = 0; i < 3; i++) {
+        const address = name + "@" + domain;
+        try {
+          const created = await this.call("/accounts", { method: "POST", body: { address, password } });
+          const tok = await this.call("/token", { method: "POST", body: { address, password } });
+          return { p: "mt", id: created.id || tok.id, address, password, token: tok.token, created: Date.now() };
+        } catch (e) {
+          if (e.status === 422 && !user) { name = randomUser(); continue; }
+          if (e.status === 422) throw httpError("Esa dirección ya está ocupada. Probá con otro nombre.", 422);
+          throw e;
+        }
+      }
+      throw httpError("No se pudo crear la dirección. Probá de nuevo.", 500);
+    },
+    async restore(a) {
+      const tok = await this.call("/token", { method: "POST", body: { address: a.address, password: a.password } });
+      a.token = tok.token; a.id = tok.id || a.id;
+    },
+    async list(a) {
+      let d;
+      try { d = await this.call("/messages?page=1", {}, a); }
+      catch (e) { if (e.status !== 401) throw e; await this.restore(a); save(); d = await this.call("/messages?page=1", {}, a); }
+      return (Array.isArray(d) ? d : (d && d["hydra:member"]) || []).map((m) => ({
+        id: m.id, from: (m.from && (m.from.name || m.from.address)) || "", subject: m.subject, intro: m.intro, seen: !!m.seen, date: m.createdAt,
+      }));
+    },
+    async read(a, id) {
+      const m = await this.call("/messages/" + encodeURIComponent(id), {}, a);
+      this.call("/messages/" + encodeURIComponent(id), { method: "PATCH", body: { seen: true } }, a).catch(() => {});
+      return {
+        subject: m.subject, date: m.createdAt, text: m.text || "",
+        html: Array.isArray(m.html) ? m.html.join("") : (m.html || ""),
+        from: (m.from && (m.from.name ? m.from.name + " <" + m.from.address + ">" : m.from.address)) || "",
+      };
+    },
+    remove(a) { return this.call("/accounts/" + encodeURIComponent(a.id), { method: "DELETE" }, a); },
+  };
+
+  /* ---------- Proveedor 2: Guerrilla Mail ---------- */
+  const GM = {
+    id: "gm", name: "Guerrilla Mail",
+    call(params) {
+      const qs = new URLSearchParams({ lang: "es", ...params }).toString();
+      return getJSON(useProxy ? "/api/gm?" + qs : "https://api.guerrillamail.com/ajax.php?" + qs, { headers: { Accept: "application/json" } });
+    },
+    async domains() { return ["sharklasers.com", "guerrillamail.com", "guerrillamail.net", "guerrillamail.org", "grr.la", "guerrillamailblock.com", "pokemail.net", "spam4.me"]; },
+    async create(user, domain) {
+      const r = await this.call({ f: "get_email_address" });
+      if (!r || !r.sid_token) throw httpError("Guerrilla Mail no respondió bien", 502);
+      let sid = r.sid_token, name = (r.email_addr || "").split("@")[0];
+      if (user) {
+        const r2 = await this.call({ f: "set_email_user", email_user: user, sid_token: sid });
+        sid = r2.sid_token || sid; name = (r2.email_addr || "").split("@")[0] || user;
+      }
+      return { p: "gm", sid, user: name, address: name + "@" + domain, created: Date.now() };
+    },
+    async restore(a) {
+      const r = await this.call({ f: "set_email_user", email_user: a.user, sid_token: a.sid });
+      a.sid = r.sid_token || a.sid;
+    },
+    async list(a) {
+      const r = await this.call({ f: "get_email_list", offset: 0, seq: 0, sid_token: a.sid });
+      if (r.sid_token && r.sid_token !== a.sid) { a.sid = r.sid_token; save(); }
+      const want = a.user;
+      if (r.email && want && r.email.split("@")[0] !== want) { await this.restore(a); save(); }
+      return (r.list || [])
+        .filter((m) => !(String(m.mail_id) === "1" && /guerrillamail\.com$/.test(m.mail_from)))
+        .map((m) => ({
+          id: String(m.mail_id), from: decode(m.mail_from), subject: decode(m.mail_subject), intro: decode(m.mail_excerpt),
+          seen: String(m.mail_read) === "1", date: +m.mail_timestamp ? +m.mail_timestamp * 1000 : Date.now(),
+        }));
+    },
+    async read(a, id) {
+      const r = await this.call({ f: "fetch_email", email_id: id, sid_token: a.sid });
+      const body = r.mail_body || "";
+      const isHtml = /<[a-z][\s\S]*>/i.test(body);
+      return { subject: decode(r.mail_subject), from: decode(r.mail_from), date: +r.mail_timestamp ? +r.mail_timestamp * 1000 : Date.now(), html: isHtml ? body : "", text: isHtml ? "" : body };
+    },
+    remove(a) { return this.call({ f: "forget_me", email_addr: a.address, sid_token: a.sid }); },
+  };
+  const PROVIDERS = { mt: MT, gm: GM };
+
+  /* ---------- Interfaz ---------- */
   function status(text, isErr) {
     $("status").classList.toggle("err", !!isErr);
     $("status").querySelector(".dot").classList.toggle("live", !isErr && !!acct);
@@ -561,66 +762,57 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     $("address").textContent = acct ? acct.address : "Sin dirección";
     $("meta").hidden = !acct;
     if (acct) {
-      $("pass").textContent = acct.password;
+      $("pass-wrap").hidden = !acct.password;
+      $("pass").textContent = acct.password || "";
       $("created").textContent = "Creada: " + new Date(acct.created).toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
+      $("provider").textContent = "Servicio: " + PROVIDERS[acct.p].name;
     }
   }
 
-  /* ---------- Cuenta ---------- */
-  async function loadDomains() {
-    let data;
-    if (useProxy) {
-      try { data = await api("/domains?page=1", { noAuth: true }); if (!data) throw Object.assign(new Error("vacío"), { status: 404 }); }
+  async function useProvider(p) {
+    const list = await p.domains();
+    prov = p;
+    $("domain").innerHTML = "";
+    list.forEach((d) => { const o = document.createElement("option"); o.value = d; o.textContent = "@" + d; $("domain").appendChild(o); });
+    return list;
+  }
+
+  // Busca un proveedor que funcione: primero mail.tm, si falla Guerrilla Mail.
+  async function pickProvider(prefer) {
+    const order = prefer === "gm" ? [GM, MT] : [MT, GM];
+    let lastErr;
+    for (const p of order) {
+      try { await useProvider(p); if (p === GM) { const r = await GM.call({ f: "get_email_address" }); if (!r || !r.sid_token) throw httpError("Guerrilla Mail no respondió bien", 502); } return p; }
       catch (e) {
-        // Solo vamos directo si el proxy no existe (hosting estático). Si existe pero falla, mostramos su error.
-        if (e.status === 404 || e.status === 405) useProxy = false; else throw e;
+        lastErr = e;
+        if (useProxy && (e.status === 404 || e.status === 405)) { useProxy = false; try { await useProvider(p); return p; } catch (e2) { lastErr = e2; } }
       }
     }
-    if (!useProxy) data = await api("/domains?page=1", { noAuth: true });
-    const list = members(data).filter((d) => d.isActive !== false && d.isPrivate !== true);
-    domains = list.map((d) => d.domain);
-    if (!domains.length) throw new Error("El servicio no tiene dominios disponibles ahora mismo.");
-    $("domain").innerHTML = "";
-    domains.forEach((d) => { const o = document.createElement("option"); o.value = d; o.textContent = "@" + d; $("domain").appendChild(o); });
+    throw lastErr || new Error("Ningún servicio de correo respondió");
   }
 
   async function createAccount(user) {
-    const domain = $("domain").value || domains[0];
-    const password = rand(14);
-    let name = user || randomUser();
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const address = name + "@" + domain;
-      try {
-        const created = await api("/accounts", { method: "POST", body: { address, password }, noAuth: true });
-        const tok = await api("/token", { method: "POST", body: { address, password }, noAuth: true });
-        acct = { id: created.id || tok.id, address, password, token: tok.token, created: Date.now() };
-        save(); seen = new Set(); primed = false; return;
-      } catch (e) {
-        if (e.status === 422 && !user) { name = randomUser(); continue; }
-        if (e.status === 422) throw new Error("Esa dirección ya está ocupada. Probá con otro nombre.");
-        if (e.status === 429) throw new Error("Demasiadas solicitudes. Esperá unos segundos y probá de nuevo.");
-        throw e;
-      }
+    const domain = $("domain").value;
+    try {
+      acct = await prov.create(user, domain);
+    } catch (e) {
+      if (e.status === 422) throw e;
+      // Si el proveedor actual falla, probamos con el otro antes de rendirnos.
+      const other = prov === MT ? GM : MT;
+      const list = await useProvider(other);
+      acct = await other.create(user, list[0]);
     }
-    throw new Error("No se pudo crear la dirección. Probá de nuevo.");
-  }
-
-  async function relogin() {
-    const tok = await api("/token", { method: "POST", body: { address: acct.address, password: acct.password }, noAuth: true });
-    acct.token = tok.token; acct.id = tok.id || acct.id; save();
+    save(); seen = new Set(); primed = false;
   }
 
   /* ---------- Bandeja ---------- */
   async function fetchInbox(manual) {
     if (!acct) return;
     try {
-      let data;
-      try { data = await api("/messages?page=1"); }
-      catch (e) { if (e.status === 401) { await relogin(); data = await api("/messages?page=1"); } else throw e; }
-      renderInbox(members(data));
-      status("Bandeja activa · última revisión " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      renderInbox(await prov.list(acct));
+      status("Bandeja activa vía " + prov.name + " · " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     } catch (e) {
-      if (e.status === 401 || e.status === 404) { status("Este buzón ya no existe. Crea una dirección nueva.", true); stopPolling(); return; }
+      if (acct.p === "mt" && (e.status === 401 || e.status === 404)) { status("Este buzón ya no existe. Creá una dirección nueva.", true); stopPolling(); return; }
       status(manual ? "No se pudo actualizar: " + e.message : "Sin conexión con el servicio. Reintentando…", true);
     }
   }
@@ -638,8 +830,8 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
       b.className = "msg" + (m.seen ? "" : " unread");
       b.tabIndex = 0; b.setAttribute("role", "button");
       b.innerHTML = '<span class="from"></span><span class="time"></span><span class="subj"></span><span class="intro"></span>';
-      b.querySelector(".from").textContent = (m.from && (m.from.name || m.from.address)) || "Remitente desconocido";
-      b.querySelector(".time").textContent = fmtTime(m.createdAt);
+      b.querySelector(".from").textContent = m.from || "Remitente desconocido";
+      b.querySelector(".time").textContent = fmtTime(m.date);
       b.querySelector(".subj").textContent = m.subject || "(sin asunto)";
       b.querySelector(".intro").textContent = m.intro || "";
       const open = () => openMessage(m.id);
@@ -671,27 +863,23 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
   async function openMessage(id) {
     status("Abriendo mensaje…");
     try {
-      const m = await api("/messages/" + encodeURIComponent(id));
-      const html = Array.isArray(m.html) ? m.html.join("") : (m.html || "");
-      const text = m.text || "";
+      const m = await prov.read(acct, id);
       $("r-subj").textContent = m.subject || "(sin asunto)";
-      $("r-from").textContent = "De: " + ((m.from && (m.from.name ? m.from.name + " <" + m.from.address + ">" : m.from.address)) || "desconocido") + " · " + new Date(m.createdAt).toLocaleString("es");
-      const code = findCode(text || html.replace(/<[^>]+>/g, " "));
+      $("r-from").textContent = "De: " + (m.from || "desconocido") + " · " + new Date(m.date).toLocaleString("es");
+      const code = findCode(m.text || m.html.replace(/<[^>]+>/g, " "));
       $("r-code").textContent = code; $("r-code-row").hidden = !code;
       if (code && window.fx) setTimeout(() => window.fx.code(code), 150);
-      const links = findLinks(text, html);
       $("r-links").innerHTML = "";
-      links.forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
-      if (html) {
-        $("r-html").srcdoc = '<base target="_blank"><meta name="referrer" content="no-referrer"><style>body{font-family:system-ui,sans-serif;color:#16213a;margin:12px}img{max-width:100%;height:auto}</style>' + html;
+      findLinks(m.text, m.html).forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
+      if (m.html) {
+        $("r-html").srcdoc = '<base target="_blank"><meta name="referrer" content="no-referrer"><style>body{font-family:system-ui,sans-serif;color:#16213a;margin:12px}img{max-width:100%;height:auto}</style>' + m.html;
         $("r-html").hidden = false; $("r-text").hidden = true;
       } else {
-        $("r-text").textContent = text || "(mensaje vacío)";
+        $("r-text").textContent = m.text || "(mensaje vacío)";
         $("r-text").hidden = false; $("r-html").hidden = true;
       }
       $("inbox-block").hidden = true; $("reader").hidden = false;
       $("reader").scrollIntoView({ behavior: "smooth", block: "start" });
-      api("/messages/" + encodeURIComponent(id), { method: "PATCH", body: { seen: true } }).catch(() => {});
       fetchInbox();
     } catch (e) { status("No se pudo abrir el mensaje: " + e.message, true); }
   }
@@ -702,7 +890,7 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     if (!acct) return;
     const btn = e.currentTarget;
     const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); if (window.fx) window.fx.copied(); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
-    const fb = () => { const r = document.createRange(); r.selectNodeContents($("address")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Pulsa Ctrl+C"; };
+    const fb = () => { const r = document.createRange(); r.selectNodeContents($("address")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Pulsá Ctrl+C"; };
     try { navigator.clipboard.writeText(acct.address).then(ok, fb); } catch (err) { fb(); }
   });
 
@@ -711,8 +899,9 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     const raw = $("user").value.trim();
     const user = raw ? cleanUser(raw) : "";
     if (raw && user.length < 3) { status("El nombre necesita al menos 3 letras o números.", true); return; }
-    busy(true); stopPolling(); status("Creando dirección…");
+    busy(true); stopPolling(); status("Cocinando tu mail…");
     try {
+      if (!prov) await pickProvider();
       await createAccount(user);
       $("user").value = ""; showAccount(); if (window.boom) window.boom($("address")); if (window.fx) window.fx.created(); renderInbox([]); $("back").click(); startPolling();
     } catch (err) { status(err.message, true); if (acct) startPolling(); }
@@ -725,10 +914,10 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
     const btn = e.currentTarget;
     if (!confirmDelete) { confirmDelete = true; btn.textContent = "¿Seguro? Tocá de nuevo"; setTimeout(() => { confirmDelete = false; btn.textContent = "Borrar buzón"; }, 4000); return; }
     confirmDelete = false; btn.textContent = "Borrar buzón";
-    busy(true); stopPolling(); status("Eliminando buzón…");
-    try { await api("/accounts/" + encodeURIComponent(acct.id), { method: "DELETE" }); } catch (err) {}
+    busy(true); stopPolling(); status("Borrando buzón…");
+    try { await PROVIDERS[acct.p].remove(acct); } catch (err) {}
     acct = null; clear(); showAccount(); renderInbox([]); $("back").click();
-    status("Buzón eliminado. Creando uno nuevo…");
+    status("Buzón borrado. Cocinando uno nuevo…");
     try { await createAccount(""); showAccount(); startPolling(); } catch (err) { status(err.message, true); }
     busy(false);
   });
@@ -739,14 +928,17 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
   (async function init() {
     busy(true);
     try {
-      await loadDomains();
       const stored = load();
-      if (stored && stored.address && stored.password) {
-        acct = stored;
-        const dom = acct.address.split("@")[1];
-        if (domains.includes(dom)) $("domain").value = dom;
-        showAccount(); status("Recuperando tu buzón…");
-        try { await relogin(); } catch (e) { acct = null; clear(); }
+      const valid = stored && stored.address && PROVIDERS[stored.p || "mt"];
+      if (valid) { stored.p = stored.p || "mt"; acct = stored; showAccount(); status("Recuperando tu buzón…"); }
+      await pickProvider(valid ? stored.p : undefined);
+      if (acct) {
+        try {
+          if (prov.id !== acct.p) throw new Error("otro proveedor");
+          await prov.restore(acct); save();
+          const dom = acct.address.split("@")[1];
+          if ([...$("domain").options].some((o) => o.value === dom)) $("domain").value = dom;
+        } catch (e) { acct = null; clear(); }
       }
       if (!acct) { status("Cocinando tu mail…"); await createAccount(""); }
       showAccount(); startPolling();
@@ -754,8 +946,8 @@ body.party .buddy { animation: dance .5s ease-in-out infinite; }
       $("address").textContent = "No disponible";
       const blocked = /failed to fetch|networkerror|load failed/i.test(e.message);
       status(blocked
-        ? "El navegador bloqueó la conexión con el servicio de correo. Abrí la página publicada (tu dirección de Vercel) en una pestaña normal y desactivá el bloqueador de anuncios para este sitio."
-        : "No se pudo conectar con el servicio de correo (" + e.message + "). Recargá la página.", true);
+        ? "El navegador bloqueó la conexión con el servicio de correo. Abrí la página publicada en una pestaña normal y desactivá el bloqueador de anuncios para este sitio."
+        : "Los servicios de correo no responden (" + e.message + "). Probá recargar en un rato.", true);
     } finally { busy(false); }
   })();
 })();

@@ -4,289 +4,756 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Generador de Correos</title>
+<meta name="description" content="Mails temporales reales, al toque. Recibí el código de verificación acá y registrate donde quieras.">
+<meta name="theme-color" content="#12002b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=Rubik+Mono+One&family=Syne:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: una hoja de "sobre" centrada; controles arriba, lista de direcciones abajo, franja de correo aéreo como único adorno */
+/* Layout: póster rave psicodélico. Plasma animado de fondo, título de neón que respira,
+   cinta que corre, tarjeta de vidrio oscuro con borde arcoíris girando. Un solo mundo visual (oscuro). */
 :root {
-  --bg: #eef1f4;
-  --paper: #ffffff;
-  --ink: #16213a;
-  --muted: #5b6579;
-  --line: #d6dce5;
-  --accent: #c8322b;   /* rojo de sello postal */
-  --accent-2: #1f4fa3; /* azul de correo aéreo */
-  --chip: #f3f5f8;
-  --ok: #1d7a4a;
-  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
-    --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
-  --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; color-scheme: dark;
+  color-scheme: dark;
+  --void: #12002b;          /* violeta casi negro */
+  --glass: rgba(18, 0, 43, .72);
+  --glass-2: rgba(40, 6, 80, .62);
+  --ink: #fff6fe;
+  --muted: #d6b8ff;
+  --pink: #ff2bd6;
+  --acid: #c6ff00;
+  --cyan: #00f0ff;
+  --orange: #ff8a00;
+  --line: rgba(214, 184, 255, .28);
+  --ok: #c6ff00;
+  --err: #ff5f7e;
+  --rainbow: linear-gradient(90deg, var(--pink), var(--orange), var(--acid), var(--cyan), #8b5cff, var(--pink));
+  --font-neon: "Monoton", "Rubik Mono One", system-ui, sans-serif;
+  --font-display: "Rubik Mono One", "Arial Black", system-ui, sans-serif;
+  --font-body: "Syne", "Trebuchet MS", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--void); overflow-x: clip; }
 body {
-  background: var(--bg); color: var(--ink);
-  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
-  padding-inline: 16px; padding-block: 32px 48px;
+  margin: 0; min-height: 100vh; background: var(--void); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 150px; overflow-x: hidden;
 }
-.wrap { max-width: 760px; margin-inline: auto; display: grid; gap: 20px; }
-header { display: grid; gap: 6px; }
-.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
-h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 6vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; }
-h1 .at { color: var(--accent-2); }
-.lede { color: var(--muted); margin: 0; max-width: 60ch; }
+#plasma { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .5; mix-blend-mode: overlay;
+  background: repeating-radial-gradient(circle at 30% 20%, rgba(255,255,255,.06) 0 1px, transparent 1px 3px);
+}
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none; }
 
-.sheet {
-  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+/* Cinta que corre */
+.ticker {
+  position: relative; z-index: 2; margin-inline: -16px; overflow: hidden; white-space: nowrap;
+  background: var(--acid); color: var(--void); font: 14px var(--font-display); letter-spacing: .06em;
+  padding-block: 8px; border-bottom: 3px solid var(--void); transform: rotate(-1.2deg) translateY(10px) scale(1.03);
 }
-.airmail {
-  height: 8px;
-  background: repeating-linear-gradient(-45deg, var(--accent) 0 14px, var(--paper) 14px 22px, var(--accent-2) 22px 36px, var(--paper) 36px 44px);
-}
-.tabs { display: flex; gap: 4px; padding: 14px 18px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tab {
-  font: 600 14px var(--font-body); color: var(--muted); background: none; border: 0;
-  padding: 10px 14px; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px;
-}
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.tab:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.ticker span { display: inline-block; padding-inline-end: 2em; animation: run 18s linear infinite; }
 
-.panel { padding: 18px; display: grid; gap: 16px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; color: var(--muted); min-width: 0; }
-input[type="text"], input[type="number"], select {
-  font: 15px var(--font-body); color: var(--ink); background: var(--bg);
-  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%;
+.wrap { position: relative; z-index: 2; max-width: 820px; margin-inline: auto; display: grid; gap: 26px; padding-top: 44px; }
+
+header { display: grid; gap: 10px; justify-items: start; }
+.eyebrow {
+  font: 12px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--void);
+  background: var(--pink); padding: 6px 10px; transform: rotate(2deg); box-shadow: 4px 4px 0 var(--cyan);
 }
-.checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
-.checks label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); font-weight: 400; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+h1 {
+  margin: 0; font-family: var(--font-neon); font-weight: 400; line-height: .98;
+  font-size: clamp(40px, 11vw, 96px); letter-spacing: .01em; text-wrap: balance;
+  background: var(--rainbow); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 43, 214, .55)) drop-shadow(0 0 40px rgba(0, 240, 255, .35));
+  animation: flow 6s linear infinite;
+}
+.at {
+  display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .08em; vertical-align: -.12em;
+  font-family: var(--font-display); font-size: .78em; color: var(--void); -webkit-text-fill-color: var(--void);
+  background: conic-gradient(from 0deg, var(--pink), var(--orange), var(--acid), var(--cyan), #8b5cff, var(--pink));
+  border-radius: 50%; animation: spin 5s linear infinite;
+}
+.lede { margin: 0; max-width: 56ch; font-size: 18px; font-weight: 500; color: var(--ink); text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+.lede b { color: var(--acid); }
+
+/* Tarjeta con borde arcoíris girando */
+.sheet { position: relative; border-radius: 22px; padding: 3px; isolation: isolate; overflow: hidden; }
+.sheet::before {
+  content: ""; position: absolute; inset: -60%; z-index: -2;
+  background: conic-gradient(from 0deg, var(--pink), var(--orange), var(--acid), var(--cyan), #8b5cff, var(--pink));
+  animation: spin 7s linear infinite;
+}
+.sheet-in {
+  border-radius: 19px; background: var(--glass); backdrop-filter: blur(18px) saturate(1.6); -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  overflow: hidden;
+}
+.block { padding: 22px; display: grid; gap: 14px; }
+.block + .block { border-top: 1px dashed var(--line); }
+
+.label { font: 11px var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); }
+h2 { margin: 0; font: 22px var(--font-display); color: var(--ink); text-transform: uppercase; letter-spacing: .02em; }
+
+.address-row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+.address {
+  flex: 1 1 280px; min-width: 0; padding: 14px 16px; border-radius: 14px;
+  font: 700 clamp(18px, 4.2vw, 26px) var(--font-mono); overflow-wrap: anywhere; user-select: all;
+  color: var(--acid); background: rgba(0, 0, 0, .45); border: 2px solid var(--acid);
+  text-shadow: 0 0 10px rgba(198, 255, 0, .7); box-shadow: inset 0 0 24px rgba(198, 255, 0, .15), 0 0 22px rgba(198, 255, 0, .25);
+}
+.meta { display: flex; gap: 6px 20px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.meta code { font-family: var(--font-mono); color: var(--ink); user-select: all; }
+
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.custom { display: flex; flex: 1 1 260px; min-width: 0; max-width: 100%; }
+.custom input { border-radius: 12px 0 0 12px; min-width: 0; flex: 1; }
+.custom select { border-radius: 0 12px 12px 0; border-left: 0; min-width: 0; max-width: 48%; flex: 0 1 auto; }
+input[type="text"], select {
+  font: 600 15px var(--font-body); color: var(--ink); background: rgba(0, 0, 0, .4);
+  border: 2px solid var(--line); padding: 11px 12px;
+}
+input::placeholder { color: var(--muted); opacity: .8; }
+select option { background: var(--void); color: var(--ink); }
+
 .btn {
-  font: 600 14px var(--font-body); border-radius: 6px; padding: 10px 16px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+  font: 13px var(--font-display); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  border-radius: 12px; padding: 13px 18px; cursor: pointer; color: var(--void); background: var(--cyan);
+  border: 2px solid var(--void); box-shadow: 5px 5px 0 var(--pink); transition: transform .12s, box-shadow .12s;
 }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn:hover { filter: brightness(1.05); }
-.hint { font-size: 13px; color: var(--muted); }
+.btn.primary { background: var(--acid); box-shadow: 5px 5px 0 var(--pink); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); box-shadow: none; }
+.btn.small { padding: 8px 12px; font-size: 11px; box-shadow: 3px 3px 0 var(--pink); }
+.btn:hover:not(:disabled) { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 8px 8px 0 var(--orange); }
+.btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--pink); }
+.btn.ghost:hover:not(:disabled) { box-shadow: none; border-color: var(--err); color: var(--err); }
+.btn:disabled { opacity: .5; cursor: wait; }
+.btn.done { background: var(--pink); color: var(--ink); }
+button:focus-visible, input:focus-visible, select:focus-visible, .msg:focus-visible, a:focus-visible { outline: 3px solid var(--acid); outline-offset: 3px; }
 
-.results { border-top: 1px solid var(--line); }
-.results-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; flex-wrap: wrap; }
-.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-ol.list { list-style: none; margin: 0; padding: 0 0 8px; }
-ol.list li {
-  display: flex; align-items: center; gap: 12px; padding: 8px 18px;
-  border-top: 1px dashed var(--line);
+.status { font-size: 13px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); flex: none; }
+.status.err { color: var(--err); }
+.status.err .dot { background: var(--err); box-shadow: 0 0 10px var(--err); }
+
+.inbox-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+ul.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.msg {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 14px 16px; cursor: pointer;
+  border-radius: 14px; background: var(--glass-2); border: 2px solid var(--line); transition: transform .15s, border-color .15s;
 }
-ol.list li:first-child { border-top: 0; }
-.idx { font: 12px var(--font-mono); color: var(--muted); width: 2.2em; flex: none; font-variant-numeric: tabular-nums; }
-.addr { font: 15px var(--font-mono); flex: 1; min-width: 0; overflow-wrap: anywhere; user-select: all; }
-.addr .dom { color: var(--muted); }
-.copy {
-  font: 500 12px var(--font-body); border: 1px solid var(--line); background: var(--chip); color: var(--ink);
-  border-radius: 5px; padding: 5px 10px; cursor: pointer; flex: none;
+.msg:hover { transform: rotate(-.6deg) scale(1.01); border-color: var(--cyan); }
+.msg.unread { border-color: var(--pink); box-shadow: 0 0 20px rgba(255, 43, 214, .35); }
+.msg.unread .from::before { content: "● "; color: var(--pink); }
+.msg .from { font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg .time { font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.msg .subj { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; color: var(--acid); font-weight: 700; }
+.msg .intro { grid-column: 1 / -1; font-size: 13px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { padding: 30px 16px; text-align: center; color: var(--muted); border: 2px dashed var(--line); border-radius: 14px; display: grid; gap: 6px; justify-items: center; }
+.empty strong { color: var(--ink); font: 15px var(--font-display); text-transform: uppercase; }
+.radar { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--cyan); position: relative; overflow: hidden; margin-bottom: 6px; }
+.radar::after { content: ""; position: absolute; inset: 0; background: conic-gradient(from 0deg, rgba(0,240,255,.8), transparent 30%); animation: spin 2s linear infinite; }
+
+.reader { display: grid; gap: 12px; }
+.reader-head { display: grid; gap: 4px; }
+.reader-head .subj { font: 20px var(--font-display); overflow-wrap: anywhere; color: var(--acid); }
+.reader-head .from { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; }
+.links a {
+  font: 13px var(--font-display); text-transform: uppercase; color: var(--void); background: var(--pink); text-decoration: none;
+  border-radius: 999px; padding: 8px 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  box-shadow: 0 0 18px rgba(255, 43, 214, .6);
 }
-.copy.done { color: var(--ok); border-color: var(--ok); }
-.empty { padding: 20px 18px; color: var(--muted); }
-footer { font-size: 13px; color: var(--muted); }
-@media (prefers-reduced-motion: no-preference) {
-  ol.list li { animation: in .25s ease both; }
-  @keyframes in { from { opacity: .3; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.code-pill {
+  font: 700 30px var(--font-mono); letter-spacing: .2em; padding: 8px 16px; border-radius: 12px; user-select: all;
+  color: var(--void); background: var(--acid); box-shadow: 6px 6px 0 var(--cyan);
+}
+iframe.body { width: 100%; min-height: 420px; border: 2px solid var(--line); border-radius: 14px; background: #fff; }
+pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font-mono); margin: 0; padding: 14px; border: 2px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.4); }
+
+.notes { display: grid; gap: 8px; font-size: 13px; color: var(--muted); padding: 16px 18px; border-radius: 14px; background: rgba(0,0,0,.45); }
+.notes p { margin: 0; max-width: 76ch; }
+.notes a { color: var(--cyan); }
+
+/* Juguetes */
+.toys { display: flex; gap: 10px; flex-wrap: wrap; }
+.toy {
+  font: 12px var(--font-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer;
+  color: var(--ink); background: rgba(0,0,0,.45); border: 2px solid var(--line); border-radius: 999px; padding: 8px 14px;
+  transition: transform .12s, border-color .12s, background .12s;
+}
+.toy:hover { transform: rotate(-3deg) scale(1.05); border-color: var(--acid); }
+.toy[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: var(--void); box-shadow: 0 0 18px rgba(255,43,214,.7); }
+.dice { font-size: 11px; }
+.dice.roll { animation: roll .5s cubic-bezier(.3,1.6,.5,1); }
+h1 { cursor: pointer; }
+h1.wobble { animation: flow 6s linear infinite, wobble .7s ease; }
+.wait-line { font-weight: 700; color: var(--acid); min-height: 1.5em; }
+
+.buddy {
+  position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 40; width: 92px; cursor: pointer; background: none; border: 0; padding: 0;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); animation: bob 2.6s ease-in-out infinite;
+}
+.buddy svg { width: 100%; height: auto; display: block; overflow: visible; }
+.buddy.jump { animation: jump .7s cubic-bezier(.3,1.6,.5,1); }
+.buddy .mouth-o { display: none; }
+.buddy.happy .mouth-o { display: inline; }
+.buddy.happy .mouth-smile { display: none; }
+.bubble {
+  position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 41;
+  max-width: min(260px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 16px 16px 4px 16px;
+  font: 700 14px var(--font-body); color: var(--void); background: var(--acid); border: 2px solid var(--void); box-shadow: 5px 5px 0 var(--pink);
+  transform-origin: bottom right;
+}
+@media (max-width: 520px) { .buddy { width: 66px; } .bubble { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); font-size: 13px; } }
+.bubble.show { animation: pop .4s cubic-bezier(.2,1.4,.4,1) both; }
+.spark { position: fixed; z-index: 45; pointer-events: none; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; animation: spark .8s ease-out forwards; }
+
+body.party .wrap { animation: hue 3s linear infinite; }
+body.party .ticker span { animation-duration: 5s; }
+body.party .sheet::before { animation-duration: 1.4s; }
+body.party h1 { animation: flow 1.2s linear infinite, shake .35s ease-in-out infinite; }
+body.party .buddy { animation: dance .5s ease-in-out infinite; }
+
+@keyframes bob { 50% { transform: translateY(-8px) rotate(3deg); } }
+@keyframes jump { 0% { transform: none; } 40% { transform: translateY(-60px) rotate(-12deg) scale(1.15); } 70% { transform: translateY(0) scale(1.1, .85); } 100% { transform: none; } }
+@keyframes dance { 0%, 100% { transform: rotate(-12deg) translateY(0); } 50% { transform: rotate(12deg) translateY(-14px); } }
+@keyframes wobble { 20% { transform: rotate(-3deg) scale(1.04); } 40% { transform: rotate(3deg); } 60% { transform: rotate(-2deg) scale(.98); } 80% { transform: rotate(1deg); } }
+@keyframes shake { 25% { transform: translate(-2px, 1px) rotate(-1deg); } 75% { transform: translate(2px, -1px) rotate(1deg); } }
+@keyframes hue { to { filter: hue-rotate(360deg); } }
+@keyframes roll { from { transform: rotate(-360deg) scale(.5); } }
+@keyframes spark { to { transform: translateY(26px) scale(0); opacity: 0; } }
+@keyframes flow { to { background-position: 300% 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes run { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+@keyframes pop { 0% { transform: scale(.6) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.06) rotate(1deg); opacity: 1; } 100% { transform: none; } }
+.dot.live { animation: pulse 1.4s ease-in-out infinite; }
+.pop { animation: pop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
 </head>
 <body>
+<canvas id="plasma" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<div class="ticker" aria-hidden="true"><span>✦ MAILS TEMPORALES REALES ✦ AL TOQUE ✦ SIN REGISTRO ✦ RECIBÍ EL CÓDIGO ACÁ ✦ CERO SPAM EN TU MAIL POSTA ✦ </span><span>✦ MAILS TEMPORALES REALES ✦ AL TOQUE ✦ SIN REGISTRO ✦ RECIBÍ EL CÓDIGO ACÁ ✦ CERO SPAM EN TU MAIL POSTA ✦ </span></div>
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Herramienta gratuita</span>
+    <span class="eyebrow">Correo temporal · gratis</span>
     <h1>Generador de correos<span class="at">@</span></h1>
-    <p class="lede">Crea ideas de dirección a partir de tu nombre o genera direcciones aleatorias para pruebas y formularios de ejemplo. Todo se calcula en tu navegador; nada se envía a ningún servidor.</p>
+    <div class="toys">
+      <button class="toy" type="button" id="party" aria-pressed="false">Modo fiesta</button>
+      <button class="toy" type="button" id="sound" aria-pressed="true">Sonido: sí</button>
+    </div>
+    <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
   </header>
 
-  <section class="sheet">
-    <div class="airmail" aria-hidden="true"></div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tab-nombre" aria-selected="true" aria-controls="p-nombre">Desde tu nombre</button>
-      <button class="tab" role="tab" id="tab-azar" aria-selected="false" aria-controls="p-azar">Aleatorios</button>
+  <section class="sheet" aria-labelledby="t-dir">
+    <div class="sheet-in">
+    <div class="block">
+      <span class="label" id="t-dir">Tu dirección</span>
+      <div class="address-row">
+        <div class="address" id="address">Cocinando tu mail…</div>
+        <button class="btn primary" type="button" id="copy">Copiar</button>
+      </div>
+      <div class="meta" id="meta" hidden>
+        <span>Contraseña del buzón: <code id="pass"></code></span>
+        <span id="created"></span>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span id="status-text">Conectando…</span></div>
     </div>
 
-    <form class="panel" id="p-nombre" role="tabpanel" aria-labelledby="tab-nombre">
-      <div class="grid">
-        <label>Nombre<input type="text" id="n-nombre" value="María José" autocomplete="off"></label>
-        <label>Apellido<input type="text" id="n-apellido" value="García Núñez" autocomplete="off"></label>
-        <label>Extra (año, ciudad, apodo)<input type="text" id="n-extra" value="1994" autocomplete="off"></label>
-        <label>Dominio<input type="text" id="n-dominio" value="gmail.com" list="dominios" autocomplete="off"></label>
-      </div>
-      <div class="checks">
-        <label><input type="checkbox" id="n-puntos" checked> Con puntos</label>
-        <label><input type="checkbox" id="n-guiones" checked> Con guiones bajos</label>
-        <label><input type="checkbox" id="n-extras" checked> Incluir extra</label>
-      </div>
+    <form class="block" id="new-form">
+      <span class="label">Otra dirección</span>
       <div class="row">
-        <button class="btn primary" type="submit">Generar ideas</button>
-        <span class="hint">Se quitan tildes y la ñ, que no suelen admitirse en direcciones.</span>
+        <div class="custom">
+          <input type="text" id="user" placeholder="elegí un nombre (opcional)" autocomplete="off" aria-label="Nombre de usuario" maxlength="40">
+          <select id="domain" aria-label="Dominio"></select>
+        </div>
+        <button class="btn small dice" type="button" id="dice" title="Inventa un nombre al azar">Nombre loco</button>
+        <button class="btn" type="submit" id="create">Crear otro</button>
+        <button class="btn ghost" type="button" id="delete">Borrar buzón</button>
       </div>
     </form>
 
-    <form class="panel" id="p-azar" role="tabpanel" aria-labelledby="tab-azar" hidden>
-      <div class="grid">
-        <label>Cantidad<input type="number" id="a-cantidad" value="10" min="1" max="200"></label>
-        <label>Estilo
-          <select id="a-estilo">
-            <option value="persona">Nombre de persona</option>
-            <option value="palabras">Palabras + número</option>
-            <option value="aleatorio">Caracteres aleatorios</option>
-          </select>
-        </label>
-        <label>Dominio<input type="text" id="a-dominio" value="example.com" list="dominios" autocomplete="off"></label>
+    <div class="block" id="inbox-block">
+      <div class="inbox-head">
+        <h2>Bandeja</h2>
+        <button class="btn small" type="button" id="refresh">Actualizar</button>
       </div>
-      <div class="row">
-        <button class="btn primary" type="submit">Generar</button>
-        <span class="hint">Usa <b>example.com</b> para datos de prueba: es un dominio reservado y nunca recibe correo real.</span>
-      </div>
-    </form>
+      <ul class="msgs" id="msgs" hidden></ul>
+      <div class="empty" id="empty"><div class="radar" aria-hidden="true"></div><strong>Esperando mails…</strong><span class="wait-line" id="wait-line">Consultando con los aliens…</span>Lo que llegue a esta dirección aparece acá solo. Revisamos cada 5 segundos.</div>
+    </div>
 
-    <datalist id="dominios">
-      <option value="gmail.com"></option><option value="outlook.com"></option><option value="hotmail.com"></option>
-      <option value="yahoo.com"></option><option value="icloud.com"></option><option value="proton.me"></option>
-      <option value="example.com"></option><option value="example.org"></option><option value="test.local"></option>
-    </datalist>
-
-    <div class="results">
-      <div class="results-head">
-        <span class="count" id="count"></span>
-        <button class="btn" type="button" id="copy-all">Copiar todos</button>
+    <div class="block reader" id="reader" hidden>
+      <div class="row"><button class="btn small" type="button" id="back">← Volver a la bandeja</button></div>
+      <div class="reader-head">
+        <div class="subj" id="r-subj"></div>
+        <div class="from" id="r-from"></div>
       </div>
-      <ol class="list" id="list"></ol>
+      <div class="row" id="r-code-row" hidden><span class="label">Código detectado</span><span class="code-pill pop" id="r-code"></span></div>
+      <div class="links" id="r-links"></div>
+      <iframe class="body" id="r-html" title="Contenido del correo" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
+      <pre class="body" id="r-text" hidden></pre>
+    </div>
     </div>
   </section>
 
-  <footer>Consejo: estas son ideas. Para saber si una dirección está libre, intenta registrarla en el proveedor que elijas.</footer>
+  <div class="notes">
+    <p>Las direcciones y los mensajes los da el servicio público <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>. El buzón queda guardado en este navegador: si borrás los datos o cambiás de dispositivo, lo perdés.</p>
+    <p>Algunas páginas bloquean los mails temporales. Usalo para pruebas y registros donde no quieras dar tu mail personal, no para cuentas importantes que tengas que recuperar.</p>
+  </div>
 </div>
+
+<button class="buddy" type="button" id="buddy" aria-label="Carta, la mascota. Tocala.">
+  <svg viewBox="0 0 120 100" aria-hidden="true">
+    <rect x="6" y="18" width="108" height="76" rx="14" fill="#fff6fe" stroke="#12002b" stroke-width="4"/>
+    <path d="M10 26 L60 60 L110 26" fill="none" stroke="#12002b" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="22" cy="74" r="7" fill="#ff2bd6" opacity=".6"/><circle cx="98" cy="74" r="7" fill="#ff2bd6" opacity=".6"/>
+    <circle cx="40" cy="70" r="10" fill="#fff" stroke="#12002b" stroke-width="3"/><circle cx="80" cy="70" r="10" fill="#fff" stroke="#12002b" stroke-width="3"/>
+    <circle class="pupil" cx="40" cy="70" r="4.5" fill="#12002b"/><circle class="pupil" cx="80" cy="70" r="4.5" fill="#12002b"/>
+    <path class="mouth-smile" d="M52 82 Q60 90 68 82" fill="none" stroke="#12002b" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse class="mouth-o" cx="60" cy="85" rx="5" ry="6" fill="#12002b"/>
+    <path d="M60 6 L64 14 L60 12 L56 14 Z" fill="#c6ff00" stroke="#12002b" stroke-width="2"/>
+  </svg>
+</button>
+<div class="bubble" id="bubble" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* ---------- Efectos: plasma de fondo y confeti ---------- */
+(function () {
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cv = document.getElementById("plasma"), ctx = cv.getContext("2d");
+  const W = 96, H = 64; cv.width = W; cv.height = H;
+  const img = ctx.createImageData(W, H);
+  const pal = [];
+  for (let i = 0; i < 256; i++) {
+    const t = i / 256 * Math.PI * 2;
+    pal.push([ (Math.sin(t) * .5 + .5) * 255, (Math.sin(t + 2.1) * .5 + .5) * 120, (Math.sin(t + 4.2) * .5 + .5) * 255 ]);
+  }
+  let T = 0, last = 0;
+  function frame(ms) {
+    T += Math.min(.1, Math.max(0, (ms - last) / 1000)) * (document.body.classList.contains("party") ? 5 : 1); last = ms;
+    const t = T;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const v = Math.sin(x / 9 + t) + Math.sin((y / 7 + t * .7)) + Math.sin((x + y) / 13 + t * .5) + Math.sin(Math.hypot(x - W / 2, y - H / 2) / 6 - t * 1.3);
+      const c = pal[((v + 4) * 32 + t * 30) & 255], k = (y * W + x) * 4;
+      img.data[k] = c[0] * .55; img.data[k + 1] = c[1] * .35; img.data[k + 2] = c[2] * .6; img.data[k + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    if (!calm && !document.hidden) requestAnimationFrame(frame);
+  }
+  frame(0);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !calm) requestAnimationFrame(frame); });
+  cv.style.imageRendering = "auto"; cv.style.filter = "blur(18px) saturate(1.4)"; cv.style.transform = "scale(1.1)";
+
+  const cf = document.getElementById("confetti"), c2 = cf.getContext("2d");
+  let bits = [], running = false;
+  const colors = ["#ff2bd6", "#ff8a00", "#c6ff00", "#00f0ff", "#8b5cff", "#fff6fe"];
+  function size() { cf.width = innerWidth * devicePixelRatio; cf.height = innerHeight * devicePixelRatio; }
+  addEventListener("resize", size); size();
+  window.boom = function (el) {
+    if (calm) return;
+    const r = el ? el.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 3, width: 0, height: 0 };
+    const x = (r.left + r.width / 2) * devicePixelRatio, y = (r.top + r.height / 2) * devicePixelRatio;
+    for (let i = 0; i < 90; i++) {
+      const a = Math.random() * Math.PI * 2, s = (3 + Math.random() * 9) * devicePixelRatio;
+      bits.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 6 * devicePixelRatio, r: Math.random() * 6, vr: Math.random() * .4 - .2,
+        w: (5 + Math.random() * 7) * devicePixelRatio, h: (3 + Math.random() * 4) * devicePixelRatio, c: colors[i % colors.length], life: 90 + Math.random() * 40 });
+    }
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  };
+  function tick() {
+    c2.clearRect(0, 0, cf.width, cf.height);
+    bits = bits.filter((b) => b.life-- > 0);
+    for (const b of bits) {
+      b.vy += .35 * devicePixelRatio; b.vx *= .985; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      c2.save(); c2.translate(b.x, b.y); c2.rotate(b.r); c2.globalAlpha = Math.min(1, b.life / 30);
+      c2.fillStyle = b.c; c2.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); c2.restore();
+    }
+    if (bits.length) requestAnimationFrame(tick); else { running = false; c2.clearRect(0, 0, cf.width, cf.height); }
+  }
+
+  /* ---------- Sonidos (sintetizados, sin archivos) ---------- */
+  let ac = null, soundOn = true;
+  try { soundOn = localStorage.getItem("gc-sound") !== "0"; } catch (e) {}
+  function tone(freqs, dur, type, slide) {
+    if (!soundOn) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      freqs.forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * dur * .8;
+        o.type = type || "square"; o.frequency.setValueAtTime(f, t0);
+        if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t0 + dur);
+        g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.08, t0 + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+        o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + .02);
+      });
+    } catch (e) {}
+  }
+  const sfx = {
+    mail: () => tone([523, 659, 784, 1047], .12, "square"),
+    pop: () => tone([880], .08, "triangle", 1.8),
+    boing: () => tone([180], .35, "sine", 3.2),
+    dice: () => tone([300, 420, 360, 520], .05, "square"),
+    party: () => tone([130, 196, 261, 392, 523], .09, "sawtooth"),
+  };
+
+  /* ---------- Carta, la mascota ---------- */
+  const buddy = document.getElementById("buddy"), bubble = document.getElementById("bubble");
+  let bubbleT = null;
+  function say(text, ms) {
+    bubble.textContent = text; bubble.hidden = false;
+    bubble.classList.remove("show"); void bubble.offsetWidth; bubble.classList.add("show");
+    clearTimeout(bubbleT); bubbleT = setTimeout(() => { bubble.hidden = true; }, ms || 3200);
+  }
+  function jump(happy) {
+    buddy.classList.remove("jump"); void buddy.offsetWidth; buddy.classList.add("jump");
+    if (happy) { buddy.classList.add("happy"); setTimeout(() => buddy.classList.remove("happy"), 1600); }
+  }
+  buddy.addEventListener("animationend", () => buddy.classList.remove("jump"));
+  const CHAMUYO = [
+    "¡Hola! Soy Carta. Vivo acá y como spam.",
+    "Si me tocás de nuevo, te cobro el envío.",
+    "Dato: este mail se autodestruye si borrás el navegador.",
+    "Dale, registrate en algo. Te espero con el código.",
+    "Estoy nervioso, nunca me llega nada lindo.",
+    "¿Probaste el modo fiesta? Es medio ilegal.",
+    "Escribí «falopa» en cualquier lado de la página. No te digo más.",
+    "Mi primo es un telegrama. Está viejito.",
+    "Cero spam en tu mail posta. De nada.",
+  ];
+  let pokes = 0;
+  buddy.addEventListener("click", () => {
+    pokes++; jump(true); sfx.boing(); window.boom(buddy);
+    say(pokes > 6 && pokes % 7 === 0 ? "¡BASTA! Me mareaste 😵" : CHAMUYO[Math.floor(Math.random() * CHAMUYO.length)]);
+  });
+  // Los ojos siguen al cursor
+  const pupils = [...buddy.querySelectorAll(".pupil")];
+  addEventListener("pointermove", (e) => {
+    const r = buddy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * .7;
+    const a = Math.atan2(e.clientY - cy, e.clientX - cx), d = Math.min(4, Math.hypot(e.clientX - cx, e.clientY - cy) / 40);
+    pupils.forEach((p) => p.setAttribute("transform", "translate(" + (Math.cos(a) * d).toFixed(1) + " " + (Math.sin(a) * d).toFixed(1) + ")"));
+  }, { passive: true });
+
+  /* ---------- Estela de chispas ---------- */
+  let lastSpark = 0;
+  const sparkColors = ["#ff2bd6", "#c6ff00", "#00f0ff", "#ff8a00", "#8b5cff"];
+  if (!calm) addEventListener("pointermove", (e) => {
+    const now = performance.now(); if (now - lastSpark < 28) return; lastSpark = now;
+    const s = document.createElement("span"); s.className = "spark";
+    s.style.left = e.clientX + "px"; s.style.top = e.clientY + "px";
+    s.style.background = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+    s.style.boxShadow = "0 0 8px " + s.style.background;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 800);
+  }, { passive: true });
+
+  /* ---------- Modo fiesta y sonido ---------- */
+  const partyBtn = document.getElementById("party"), soundBtn = document.getElementById("sound");
+  function setParty(on) {
+    document.body.classList.toggle("party", on); partyBtn.setAttribute("aria-pressed", on);
+    partyBtn.textContent = on ? "Fiesta: ON" : "Modo fiesta";
+    if (on) { sfx.party(); window.boom(); setTimeout(() => window.boom(), 250); say("¡UNTZ UNTZ UNTZ! 🪩"); jump(true); }
+  }
+  partyBtn.addEventListener("click", () => setParty(!document.body.classList.contains("party")));
+  function paintSound() { soundBtn.setAttribute("aria-pressed", soundOn); soundBtn.textContent = soundOn ? "Sonido: sí" : "Sonido: no"; }
+  soundBtn.addEventListener("click", () => { soundOn = !soundOn; paintSound(); try { localStorage.setItem("gc-sound", soundOn ? "1" : "0"); } catch (e) {} sfx.pop(); });
+  paintSound();
+
+  /* ---------- Título que baila ---------- */
+  const h1 = document.querySelector("h1");
+  h1.addEventListener("click", () => { h1.classList.remove("wobble"); void h1.offsetWidth; h1.classList.add("wobble"); window.boom(h1); sfx.pop(); });
+  h1.addEventListener("animationend", (e) => { if (e.animationName === "wobble") h1.classList.remove("wobble"); });
+
+  /* ---------- Easter egg: escribir «falopa» ---------- */
+  let typed = "";
+  addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input, select, textarea")) return;
+    typed = (typed + (e.key || "").toLowerCase()).slice(-6);
+    if (typed === "falopa") { setParty(true); for (let i = 0; i < 5; i++) setTimeout(() => window.boom(), i * 180); say("🤯 Desbloqueaste el modo FALOPA TOTAL", 4000); typed = ""; }
+  });
+
+  /* ---------- Dado de nombres locos ---------- */
+  const COSAS = ["milanesa", "carpincho", "pinguino", "alfajor", "empanada", "mapache", "dinosaurio", "fideo", "choripan", "ovni", "tortuga", "llama", "mate", "gato", "pato", "zapallo", "chancleta", "tostada"];
+  const ONDA = ["turbo", "cosmico", "galactico", "ninja", "fachero", "electrico", "dorado", "supersonico", "picante", "mistico", "salvaje", "cuantico", "fosforito", "rebelde"];
+  const dice = document.getElementById("dice"), userIn = document.getElementById("user");
+  dice.addEventListener("click", () => {
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    userIn.value = pick(COSAS) + pick(ONDA) + Math.floor(10 + Math.random() * 90);
+    dice.classList.remove("roll"); void dice.offsetWidth; dice.classList.add("roll");
+    sfx.dice(); say("¿Te gusta «" + userIn.value + "»? Tocá «Crear otro».", 2800);
+  });
+
+  /* ---------- Frases mientras esperás ---------- */
+  const ESPERA = ["Consultando con los aliens…", "Sobornando al cartero…", "Calentando el horno de mails…", "Revisando debajo del felpudo…",
+    "Hackeando la matrix (mentira)…", "Esperando que tu crush te escriba…", "Haciendo girar el radar a mano…", "Contando palomas mensajeras…"];
+  const waitLine = document.getElementById("wait-line");
+  let wi = 0;
+  setInterval(() => { if (!document.getElementById("empty").hidden) { wi = (wi + 1) % ESPERA.length; waitLine.textContent = ESPERA[wi]; } }, 3000);
+
+  window.fx = {
+    say, jump,
+    mail(n) { jump(true); sfx.mail(); window.boom(); say(n > 1 ? "¡Te llegaron " + n + " mails! 📬" : "¡Te llegó un mail! 📬 Tocalo para abrirlo."); },
+    copied() { sfx.pop(); say("¡Copiado! Pegalo donde te quieras registrar."); },
+    created() { sfx.mail(); jump(true); say("Mail nuevito, recién salido del horno 🔥"); },
+    code(c) { sfx.mail(); window.boom(document.getElementById("r-code")); say("¡Código " + c + "! Copialo y pegalo en la página."); },
+  };
+  setTimeout(() => say("¡Hola! Soy Carta 💌 Ya te armé un mail. Tocame si te aburrís."), 1400);
+})();
+</script>
 
 <script>
 (function () {
+  const DIRECT = "https://api.mail.tm";
+  const PROXY = "/api/mail?path=";
+  // En Vercel usamos el proxy del mismo dominio; si no existe (otro hosting), vamos directo.
+  let useProxy = /^https?:$/.test(location.protocol);
+  const KEY = "gc-mailbox";
   const $ = (id) => document.getElementById(id);
-  const list = $("list"), count = $("count");
-  let current = [];
+  let acct = null;          // {id, address, password, token, created}
+  let domains = [];
+  let timer = null;
+  let seen = new Set();
+  let primed = false;      // evita festejar mensajes viejos al cargar
 
-  const clean = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "").trim();
-  const domainOf = (s) => (s.trim().replace(/^@+/, "").toLowerCase() || "example.com");
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const num = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  /* ---------- API ---------- */
+  async function api(path, opts = {}) {
+    const method = opts.method || "GET";
+    const headers = { Accept: "application/json" };
+    if (opts.body) headers["Content-Type"] = method === "PATCH" && !useProxy ? "application/merge-patch+json" : "application/json";
+    if (acct && acct.token && !opts.noAuth) headers.Authorization = "Bearer " + acct.token;
+    const url = useProxy ? PROXY + encodeURIComponent(path) : DIRECT + path;
+    const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    if (res.status === 204) return null;
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) { const err = new Error((data && (data.detail || data.message || data["hydra:description"])) || ("Error " + res.status)); err.status = res.status; throw err; }
+    return data;
+  }
+  const members = (d) => Array.isArray(d) ? d : (d && d["hydra:member"]) || [];
 
-  function render(addrs) {
-    current = addrs;
-    list.innerHTML = "";
-    if (!addrs.length) {
-      list.innerHTML = '<li class="empty">Escribe al menos un nombre para ver ideas.</li>';
-      count.textContent = "0 direcciones";
-      return;
+  /* ---------- Helpers ---------- */
+  const rand = (n) => { const a = "abcdefghijklmnopqrstuvwxyz0123456789"; let s = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (const x of b) s += a[x % a.length]; return s; };
+  const WORDS = ["sol","luna","rio","nube","faro","cometa","brisa","zorro","lince","roble","coral","pixel","cielo","halcon","marea","tango","canela","trigo"];
+  const randomUser = () => WORDS[Math.floor(Math.random() * WORDS.length)] + WORDS[Math.floor(Math.random() * WORDS.length)] + rand(3);
+  const cleanUser = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9._-]/g, "").replace(/^[._-]+|[._-]+$/g, "");
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(acct)); } catch (e) {} };
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
+  const clear = () => { try { localStorage.removeItem(KEY); } catch (e) {} };
+  const fmtTime = (iso) => { const d = new Date(iso); const today = new Date().toDateString() === d.toDateString();
+    return today ? d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("es", { day: "numeric", month: "short" }); };
+
+  function status(text, isErr) {
+    $("status").classList.toggle("err", !!isErr);
+    $("status").querySelector(".dot").classList.toggle("live", !isErr && !!acct);
+    $("status-text").textContent = text;
+  }
+  function busy(on) { ["create", "delete", "refresh"].forEach((id) => { $(id).disabled = on; }); }
+
+  function showAccount() {
+    $("address").textContent = acct ? acct.address : "Sin dirección";
+    $("meta").hidden = !acct;
+    if (acct) {
+      $("pass").textContent = acct.password;
+      $("created").textContent = "Creada: " + new Date(acct.created).toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
     }
-    addrs.forEach((a, i) => {
-      const [user, dom] = a.split("@");
+  }
+
+  /* ---------- Cuenta ---------- */
+  async function loadDomains() {
+    let data;
+    if (useProxy) {
+      try { data = await api("/domains?page=1", { noAuth: true }); if (!data) throw new Error("vacío"); }
+      catch (e) { useProxy = false; }
+    }
+    if (!useProxy) data = await api("/domains?page=1", { noAuth: true });
+    const list = members(data).filter((d) => d.isActive !== false && d.isPrivate !== true);
+    domains = list.map((d) => d.domain);
+    if (!domains.length) throw new Error("El servicio no tiene dominios disponibles ahora mismo.");
+    $("domain").innerHTML = "";
+    domains.forEach((d) => { const o = document.createElement("option"); o.value = d; o.textContent = "@" + d; $("domain").appendChild(o); });
+  }
+
+  async function createAccount(user) {
+    const domain = $("domain").value || domains[0];
+    const password = rand(14);
+    let name = user || randomUser();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const address = name + "@" + domain;
+      try {
+        const created = await api("/accounts", { method: "POST", body: { address, password }, noAuth: true });
+        const tok = await api("/token", { method: "POST", body: { address, password }, noAuth: true });
+        acct = { id: created.id || tok.id, address, password, token: tok.token, created: Date.now() };
+        save(); seen = new Set(); primed = false; return;
+      } catch (e) {
+        if (e.status === 422 && !user) { name = randomUser(); continue; }
+        if (e.status === 422) throw new Error("Esa dirección ya está ocupada. Probá con otro nombre.");
+        if (e.status === 429) throw new Error("Demasiadas solicitudes. Esperá unos segundos y probá de nuevo.");
+        throw e;
+      }
+    }
+    throw new Error("No se pudo crear la dirección. Probá de nuevo.");
+  }
+
+  async function relogin() {
+    const tok = await api("/token", { method: "POST", body: { address: acct.address, password: acct.password }, noAuth: true });
+    acct.token = tok.token; acct.id = tok.id || acct.id; save();
+  }
+
+  /* ---------- Bandeja ---------- */
+  async function fetchInbox(manual) {
+    if (!acct) return;
+    try {
+      let data;
+      try { data = await api("/messages?page=1"); }
+      catch (e) { if (e.status === 401) { await relogin(); data = await api("/messages?page=1"); } else throw e; }
+      renderInbox(members(data));
+      status("Bandeja activa · última revisión " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } catch (e) {
+      if (e.status === 401 || e.status === 404) { status("Este buzón ya no existe. Crea una dirección nueva.", true); stopPolling(); return; }
+      status(manual ? "No se pudo actualizar: " + e.message : "Sin conexión con el servicio. Reintentando…", true);
+    }
+  }
+
+  function renderInbox(list) {
+    const ul = $("msgs");
+    ul.innerHTML = "";
+    $("empty").hidden = list.length > 0;
+    ul.hidden = list.length === 0;
+    const fresh = list.filter((m) => !seen.has(m.id));
+    list.forEach((m) => {
+      seen.add(m.id);
       const li = document.createElement("li");
-      li.style.animationDelay = Math.min(i * 15, 300) + "ms";
-      li.innerHTML = '<span class="idx"></span><span class="addr"><span class="u"></span><span class="dom"></span></span><button class="copy" type="button">Copiar</button>';
-      li.querySelector(".idx").textContent = String(i + 1).padStart(2, "0");
-      li.querySelector(".u").textContent = user;
-      li.querySelector(".dom").textContent = "@" + dom;
-      li.querySelector(".copy").addEventListener("click", (e) => copy(a, e.currentTarget, li.querySelector(".addr")));
-      list.appendChild(li);
+      const b = document.createElement("div");
+      b.className = "msg" + (m.seen ? "" : " unread");
+      b.tabIndex = 0; b.setAttribute("role", "button");
+      b.innerHTML = '<span class="from"></span><span class="time"></span><span class="subj"></span><span class="intro"></span>';
+      b.querySelector(".from").textContent = (m.from && (m.from.name || m.from.address)) || "Remitente desconocido";
+      b.querySelector(".time").textContent = fmtTime(m.createdAt);
+      b.querySelector(".subj").textContent = m.subject || "(sin asunto)";
+      b.querySelector(".intro").textContent = m.intro || "";
+      const open = () => openMessage(m.id);
+      b.addEventListener("click", open);
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      li.appendChild(b); ul.appendChild(li);
     });
-    count.textContent = addrs.length + (addrs.length === 1 ? " dirección" : " direcciones");
+    if (fresh.length && primed && window.fx) window.fx.mail(fresh.length);
+    primed = true;
+    if (fresh.length && document.hidden) document.title = "(" + fresh.length + ") Generador de Correos";
   }
 
-  function copy(text, btn, fallbackEl) {
-    const ok = () => { const t = btn.textContent; btn.textContent = "Copiado"; btn.classList.add("done");
-      setTimeout(() => { btn.textContent = t; btn.classList.remove("done"); }, 1400); };
-    const fallback = () => { const r = document.createRange(); r.selectNodeContents(fallbackEl);
-      const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selecciona y copia"; };
-    try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+  function startPolling() { stopPolling(); fetchInbox(); timer = setInterval(fetchInbox, 5000); }
+  function stopPolling() { if (timer) clearInterval(timer); timer = null; }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "Generador de Correos"; });
+
+  /* ---------- Lector ---------- */
+  function findCode(text) {
+    const m = (text || "").match(/(?:c[oó]digo|code|verification|verificaci[oó]n|OTP|PIN)[^0-9A-Z]{0,40}\b([0-9]{4,8}|[A-Z0-9]{6,8})\b/i) || (text || "").match(/\b(\d{6})\b/);
+    return m ? m[1] : "";
+  }
+  function findLinks(text, html) {
+    const set = new Set();
+    const re = /https?:\/\/[^\s"'<>)\]]+/g;
+    [text || "", html || ""].forEach((s) => (s.match(re) || []).forEach((u) => set.add(u.replace(/&amp;/g, "&").replace(/[.,;]+$/, ""))));
+    return [...set].filter((u) => /verif|confirm|activ|valid|token|signup|register|login|auth|click/i.test(u)).slice(0, 4);
   }
 
-  $("copy-all").addEventListener("click", (e) => copy(current.join("\n"), e.currentTarget, list));
-
-  /* ---- Desde el nombre ---- */
-  function fromName() {
-    const n = clean($("n-nombre").value).split(/\s+/).filter(Boolean);
-    const a = clean($("n-apellido").value).split(/\s+/).filter(Boolean);
-    const x = clean($("n-extra").value).replace(/\s+/g, "");
-    const dom = domainOf($("n-dominio").value);
-    const seps = [""];
-    if ($("n-puntos").checked) seps.push(".");
-    if ($("n-guiones").checked) seps.push("_");
-    const useX = $("n-extras").checked && x;
-    if (!n.length && !a.length) return [];
-
-    const first = n[0] || "", ap1 = a[0] || "", ap2 = a[1] || "";
-    const fullFirst = n.join(""), ini = n.map((w) => w[0]).join("");
-    const bases = new Set();
-    for (const s of seps) {
-      const add = (...parts) => { const p = parts.filter(Boolean); if (p.length) bases.add(p.join(s)); };
-      add(first, ap1); add(fullFirst, ap1); add(ap1, first); add(ini, ap1);
-      add(first, ap1 ? ap1[0] : ""); add(first, ap1, ap2 ? ap2[0] : "");
-      add(first[0], ap1, ap2); add(first, ap2);
-      if (useX) { add(first, ap1, x); add(ini + ap1, x); add(first, x); }
-    }
-    if (first) bases.add(first);
-    if (ap1) bases.add(ini + ap1 + (ap2 ? ap2[0] : ""));
-    if (useX) bases.add(first + ap1 + x.slice(-2));
-    return [...bases].filter((b) => b.length >= 3 && b.length <= 64 && !/^[._]|[._]$/.test(b))
-      .map((b) => b + "@" + dom);
+  async function openMessage(id) {
+    status("Abriendo mensaje…");
+    try {
+      const m = await api("/messages/" + encodeURIComponent(id));
+      const html = Array.isArray(m.html) ? m.html.join("") : (m.html || "");
+      const text = m.text || "";
+      $("r-subj").textContent = m.subject || "(sin asunto)";
+      $("r-from").textContent = "De: " + ((m.from && (m.from.name ? m.from.name + " <" + m.from.address + ">" : m.from.address)) || "desconocido") + " · " + new Date(m.createdAt).toLocaleString("es");
+      const code = findCode(text || html.replace(/<[^>]+>/g, " "));
+      $("r-code").textContent = code; $("r-code-row").hidden = !code;
+      if (code && window.fx) setTimeout(() => window.fx.code(code), 150);
+      const links = findLinks(text, html);
+      $("r-links").innerHTML = "";
+      links.forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
+      if (html) {
+        $("r-html").srcdoc = '<base target="_blank"><meta name="referrer" content="no-referrer"><style>body{font-family:system-ui,sans-serif;color:#16213a;margin:12px}img{max-width:100%;height:auto}</style>' + html;
+        $("r-html").hidden = false; $("r-text").hidden = true;
+      } else {
+        $("r-text").textContent = text || "(mensaje vacío)";
+        $("r-text").hidden = false; $("r-html").hidden = true;
+      }
+      $("inbox-block").hidden = true; $("reader").hidden = false;
+      $("reader").scrollIntoView({ behavior: "smooth", block: "start" });
+      api("/messages/" + encodeURIComponent(id), { method: "PATCH", body: { seen: true } }).catch(() => {});
+      fetchInbox();
+    } catch (e) { status("No se pudo abrir el mensaje: " + e.message, true); }
   }
+  $("back").addEventListener("click", () => { $("reader").hidden = true; $("inbox-block").hidden = false; $("r-html").srcdoc = ""; });
 
-  /* ---- Aleatorios ---- */
-  const NOMBRES = ["lucia","mateo","sofia","santiago","valentina","diego","camila","nicolas","isabella","martin","ana","pablo","elena","javier","carla","andres","paula","gabriel","julia","tomas","sara","hugo","laura","daniel","emma","bruno"];
-  const APELLIDOS = ["garcia","rodriguez","lopez","martinez","gonzalez","perez","sanchez","ramirez","torres","flores","rivera","gomez","diaz","moreno","ruiz","castro","vargas","romero","herrera","medina","ortiz","silva","rojas","navarro"];
-  const PALABRAS = ["sol","luna","rio","nube","faro","cometa","trigo","brisa","zorro","lince","roble","coral","ambar","pixel","cielo","volcan","halcon","marea","tango","canela"];
-
-  function randomOne(estilo) {
-    if (estilo === "persona") {
-      const f = pick(NOMBRES), l = pick(APELLIDOS), s = pick([".", "_", ""]);
-      return pick([f + s + l, f[0] + s + l, f + s + l + num(1, 99), l + s + f, f + s + l[0] + num(10, 999)]);
-    }
-    if (estilo === "palabras") return pick(PALABRAS) + pick([".", "_", ""]) + pick(PALABRAS) + num(1, 9999);
-    const abc = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let s = pick("abcdefghijklmnopqrstuvwxyz".split(""));
-    for (let i = 0, n = num(7, 11); i < n; i++) s += abc[num(0, abc.length - 1)];
-    return s;
-  }
-
-  function random() {
-    const n = Math.max(1, Math.min(200, parseInt($("a-cantidad").value, 10) || 10));
-    const estilo = $("a-estilo").value, dom = domainOf($("a-dominio").value);
-    const out = new Set(); let guard = 0;
-    while (out.size < n && guard++ < n * 20) out.add(randomOne(estilo) + "@" + dom);
-    return [...out];
-  }
-
-  /* ---- Pestañas y formularios ---- */
-  const tabs = [["tab-nombre", "p-nombre", fromName], ["tab-azar", "p-azar", random]];
-  tabs.forEach(([t, p, fn]) => {
-    $(t).addEventListener("click", () => {
-      tabs.forEach(([t2, p2]) => { $(t2).setAttribute("aria-selected", t2 === t); $(p2).hidden = p2 !== p; });
-      try { localStorage.setItem("gc-tab", t); } catch (e) {}
-      render(fn());
-    });
-    $(p).addEventListener("submit", (e) => { e.preventDefault(); render(fn()); });
+  /* ---------- Acciones ---------- */
+  $("copy").addEventListener("click", (e) => {
+    if (!acct) return;
+    const btn = e.currentTarget;
+    const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); if (window.fx) window.fx.copied(); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+    const fb = () => { const r = document.createRange(); r.selectNodeContents($("address")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Pulsa Ctrl+C"; };
+    try { navigator.clipboard.writeText(acct.address).then(ok, fb); } catch (err) { fb(); }
   });
-  $("p-nombre").addEventListener("input", () => render(fromName()));
 
-  let start = "tab-nombre";
-  try { if (localStorage.getItem("gc-tab") === "tab-azar") start = "tab-azar"; } catch (e) {}
-  $(start).click();
+  $("new-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const raw = $("user").value.trim();
+    const user = raw ? cleanUser(raw) : "";
+    if (raw && user.length < 3) { status("El nombre necesita al menos 3 letras o números.", true); return; }
+    busy(true); stopPolling(); status("Creando dirección…");
+    try {
+      await createAccount(user);
+      $("user").value = ""; showAccount(); if (window.boom) window.boom($("address")); if (window.fx) window.fx.created(); renderInbox([]); $("back").click(); startPolling();
+    } catch (err) { status(err.message, true); if (acct) startPolling(); }
+    finally { busy(false); }
+  });
+
+  let confirmDelete = false;
+  $("delete").addEventListener("click", async (e) => {
+    if (!acct) return;
+    const btn = e.currentTarget;
+    if (!confirmDelete) { confirmDelete = true; btn.textContent = "¿Seguro? Tocá de nuevo"; setTimeout(() => { confirmDelete = false; btn.textContent = "Borrar buzón"; }, 4000); return; }
+    confirmDelete = false; btn.textContent = "Borrar buzón";
+    busy(true); stopPolling(); status("Eliminando buzón…");
+    try { await api("/accounts/" + encodeURIComponent(acct.id), { method: "DELETE" }); } catch (err) {}
+    acct = null; clear(); showAccount(); renderInbox([]); $("back").click();
+    status("Buzón eliminado. Creando uno nuevo…");
+    try { await createAccount(""); showAccount(); startPolling(); } catch (err) { status(err.message, true); }
+    busy(false);
+  });
+
+  $("refresh").addEventListener("click", () => fetchInbox(true));
+
+  /* ---------- Inicio ---------- */
+  (async function init() {
+    busy(true);
+    try {
+      await loadDomains();
+      const stored = load();
+      if (stored && stored.address && stored.password) {
+        acct = stored;
+        const dom = acct.address.split("@")[1];
+        if (domains.includes(dom)) $("domain").value = dom;
+        showAccount(); status("Recuperando tu buzón…");
+        try { await relogin(); } catch (e) { acct = null; clear(); }
+      }
+      if (!acct) { status("Cocinando tu mail…"); await createAccount(""); }
+      showAccount(); startPolling();
+    } catch (e) {
+      $("address").textContent = "No disponible";
+      const blocked = /fetch|network|load/i.test(e.message);
+      status(blocked
+        ? "El navegador bloqueó la conexión con el servicio de correo. Abrí la página publicada (tu dirección de Vercel) en una pestaña normal y desactivá el bloqueador de anuncios para este sitio."
+        : "No se pudo conectar con el servicio de correo (" + e.message + "). Recargá la página.", true);
+    } finally { busy(false); }
+  })();
 })();
 </script>
 </body>

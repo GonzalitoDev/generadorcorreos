@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Generador de Correos</title>
+<meta name="description" content="Crea un correo temporal real, recibe mensajes al instante y úsalo para registrarte en páginas web.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: una hoja de "sobre" centrada; controles arriba, lista de direcciones abajo, franja de correo aéreo como único adorno */
+/* Layout: una hoja de "sobre" centrada; la dirección arriba como sello, bandeja de entrada debajo, franja de correo aéreo como único adorno */
 :root {
   --bg: #eef1f4;
   --paper: #ffffff;
@@ -19,6 +20,7 @@
   --accent-2: #1f4fa3; /* azul de correo aéreo */
   --chip: #f3f5f8;
   --ok: #1d7a4a;
+  --unread: #e8eefb;
   --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -26,267 +28,398 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
-    --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; color-scheme: dark;
+    --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; --unread: #1c2a4a; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
-  --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; color-scheme: dark;
+  --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; --unread: #1c2a4a; color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
-  background: var(--bg); color: var(--ink);
+  margin: 0; background: var(--bg); color: var(--ink);
   font-family: var(--font-body); font-size: 15px; line-height: 1.5;
   padding-inline: 16px; padding-block: 32px 48px;
 }
-.wrap { max-width: 760px; margin-inline: auto; display: grid; gap: 20px; }
+.wrap { max-width: 780px; margin-inline: auto; display: grid; gap: 20px; }
 header { display: grid; gap: 6px; }
 .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 6vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; }
 h1 .at { color: var(--accent-2); }
-.lede { color: var(--muted); margin: 0; max-width: 60ch; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; margin: 0; }
+.lede { color: var(--muted); margin: 0; max-width: 62ch; }
 
-.sheet {
-  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-}
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .airmail {
   height: 8px;
   background: repeating-linear-gradient(-45deg, var(--accent) 0 14px, var(--paper) 14px 22px, var(--accent-2) 22px 36px, var(--paper) 36px 44px);
 }
-.tabs { display: flex; gap: 4px; padding: 14px 18px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tab {
-  font: 600 14px var(--font-body); color: var(--muted); background: none; border: 0;
-  padding: 10px 14px; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px;
-}
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.tab:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.block { padding: 18px; display: grid; gap: 14px; }
+.block + .block { border-top: 1px solid var(--line); }
 
-.panel { padding: 18px; display: grid; gap: 16px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; color: var(--muted); min-width: 0; }
-input[type="text"], input[type="number"], select {
-  font: 15px var(--font-body); color: var(--ink); background: var(--bg);
-  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%;
+.label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.address-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.address {
+  font: 500 clamp(17px, 3.6vw, 22px) var(--font-mono); flex: 1 1 260px; min-width: 0;
+  overflow-wrap: anywhere; user-select: all; padding: 10px 12px; border: 1px dashed var(--line);
+  border-radius: 6px; background: var(--bg);
 }
-.checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
-.checks label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); font-weight: 400; }
+.meta { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.meta code { font-family: var(--font-mono); color: var(--ink); user-select: all; }
+
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.custom { display: flex; gap: 0; flex: 1 1 320px; min-width: 0; }
+.custom input { border-radius: 6px 0 0 6px; min-width: 0; flex: 1; }
+.custom select { border-radius: 0 6px 6px 0; border-left: 0; max-width: 50%; }
+input[type="text"], select {
+  font: 15px var(--font-body); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px;
+}
 .btn {
   font: 600 14px var(--font-body); border-radius: 6px; padding: 10px 16px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+  border: 1px solid var(--line); background: var(--paper); color: var(--ink); white-space: nowrap;
 }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn:hover { filter: brightness(1.05); }
-.hint { font-size: 13px; color: var(--muted); }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn:disabled { opacity: .55; cursor: wait; }
+.btn:hover:not(:disabled) { filter: brightness(1.05); }
+.btn.done { color: var(--ok); border-color: var(--ok); }
+button:focus-visible, input:focus-visible, select:focus-visible, .msg:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
-.results { border-top: 1px solid var(--line); }
-.results-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; flex-wrap: wrap; }
-.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-ol.list { list-style: none; margin: 0; padding: 0 0 8px; }
-ol.list li {
-  display: flex; align-items: center; gap: 12px; padding: 8px 18px;
-  border-top: 1px dashed var(--line);
-}
-ol.list li:first-child { border-top: 0; }
-.idx { font: 12px var(--font-mono); color: var(--muted); width: 2.2em; flex: none; font-variant-numeric: tabular-nums; }
-.addr { font: 15px var(--font-mono); flex: 1; min-width: 0; overflow-wrap: anywhere; user-select: all; }
-.addr .dom { color: var(--muted); }
-.copy {
-  font: 500 12px var(--font-body); border: 1px solid var(--line); background: var(--chip); color: var(--ink);
-  border-radius: 5px; padding: 5px 10px; cursor: pointer; flex: none;
-}
-.copy.done { color: var(--ok); border-color: var(--ok); }
-.empty { padding: 20px 18px; color: var(--muted); }
-footer { font-size: 13px; color: var(--muted); }
+.status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.status.err { color: var(--accent); }
+.status.err .dot { background: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
-  ol.list li { animation: in .25s ease both; }
-  @keyframes in { from { opacity: .3; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+  .dot.live { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
 }
+
+.inbox-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+ul.msgs { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.msg {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 14px; cursor: pointer;
+  border-top: 1px solid var(--line); background: var(--paper);
+}
+.msgs li:first-child .msg { border-top: 0; }
+.msg.unread { background: var(--unread); }
+.msg .from { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg .time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.msg .subj { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; }
+.msg .intro { grid-column: 1 / -1; font-size: 13px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
+.empty strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+.reader { display: grid; gap: 10px; }
+.reader-head { display: grid; gap: 2px; }
+.reader-head .subj { font-family: var(--font-display); font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
+.reader-head .from { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.links a {
+  font-size: 13px; color: var(--accent-2); border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 10px; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.code-pill { font: 600 20px var(--font-mono); letter-spacing: .12em; padding: 6px 12px; border-radius: 6px; background: var(--chip); border: 1px solid var(--line); user-select: all; }
+iframe.body { width: 100%; min-height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font-mono); margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+
+.notes { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.notes p { margin: 0; max-width: 72ch; }
 </style>
 </head>
 <body>
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Herramienta gratuita</span>
+    <span class="eyebrow">Correo temporal gratuito</span>
     <h1>Generador de correos<span class="at">@</span></h1>
-    <p class="lede">Crea ideas de dirección a partir de tu nombre o genera direcciones aleatorias para pruebas y formularios de ejemplo. Todo se calcula en tu navegador; nada se envía a ningún servidor.</p>
+    <p class="lede">Crea una dirección real en un segundo, úsala para registrarte y recibe aquí el correo de verificación. Sin cuenta ni contraseña que recordar.</p>
   </header>
 
-  <section class="sheet">
+  <section class="sheet" aria-labelledby="t-dir">
     <div class="airmail" aria-hidden="true"></div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tab-nombre" aria-selected="true" aria-controls="p-nombre">Desde tu nombre</button>
-      <button class="tab" role="tab" id="tab-azar" aria-selected="false" aria-controls="p-azar">Aleatorios</button>
+
+    <div class="block">
+      <span class="label" id="t-dir">Tu dirección</span>
+      <div class="address-row">
+        <div class="address" id="address">Creando dirección…</div>
+        <button class="btn" type="button" id="copy">Copiar</button>
+      </div>
+      <div class="meta" id="meta" hidden>
+        <span>Contraseña del buzón: <code id="pass"></code></span>
+        <span id="created"></span>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span id="status-text">Conectando…</span></div>
     </div>
 
-    <form class="panel" id="p-nombre" role="tabpanel" aria-labelledby="tab-nombre">
-      <div class="grid">
-        <label>Nombre<input type="text" id="n-nombre" value="María José" autocomplete="off"></label>
-        <label>Apellido<input type="text" id="n-apellido" value="García Núñez" autocomplete="off"></label>
-        <label>Extra (año, ciudad, apodo)<input type="text" id="n-extra" value="1994" autocomplete="off"></label>
-        <label>Dominio<input type="text" id="n-dominio" value="gmail.com" list="dominios" autocomplete="off"></label>
-      </div>
-      <div class="checks">
-        <label><input type="checkbox" id="n-puntos" checked> Con puntos</label>
-        <label><input type="checkbox" id="n-guiones" checked> Con guiones bajos</label>
-        <label><input type="checkbox" id="n-extras" checked> Incluir extra</label>
-      </div>
+    <form class="block" id="new-form">
+      <span class="label">Nueva dirección</span>
       <div class="row">
-        <button class="btn primary" type="submit">Generar ideas</button>
-        <span class="hint">Se quitan tildes y la ñ, que no suelen admitirse en direcciones.</span>
+        <div class="custom">
+          <input type="text" id="user" placeholder="nombre (opcional)" autocomplete="off" aria-label="Nombre de usuario" maxlength="40">
+          <select id="domain" aria-label="Dominio"></select>
+        </div>
+        <button class="btn primary" type="submit" id="create">Crear dirección</button>
+        <button class="btn" type="button" id="delete">Eliminar buzón</button>
       </div>
     </form>
 
-    <form class="panel" id="p-azar" role="tabpanel" aria-labelledby="tab-azar" hidden>
-      <div class="grid">
-        <label>Cantidad<input type="number" id="a-cantidad" value="10" min="1" max="200"></label>
-        <label>Estilo
-          <select id="a-estilo">
-            <option value="persona">Nombre de persona</option>
-            <option value="palabras">Palabras + número</option>
-            <option value="aleatorio">Caracteres aleatorios</option>
-          </select>
-        </label>
-        <label>Dominio<input type="text" id="a-dominio" value="example.com" list="dominios" autocomplete="off"></label>
+    <div class="block" id="inbox-block">
+      <div class="inbox-head">
+        <h2>Bandeja de entrada</h2>
+        <button class="btn small" type="button" id="refresh">Actualizar</button>
       </div>
-      <div class="row">
-        <button class="btn primary" type="submit">Generar</button>
-        <span class="hint">Usa <b>example.com</b> para datos de prueba: es un dominio reservado y nunca recibe correo real.</span>
-      </div>
-    </form>
+      <ul class="msgs" id="msgs" hidden></ul>
+      <div class="empty" id="empty"><strong>Aún no hay mensajes</strong>Los correos que lleguen a esta dirección aparecerán aquí solos. Revisamos cada 5 segundos.</div>
+    </div>
 
-    <datalist id="dominios">
-      <option value="gmail.com"></option><option value="outlook.com"></option><option value="hotmail.com"></option>
-      <option value="yahoo.com"></option><option value="icloud.com"></option><option value="proton.me"></option>
-      <option value="example.com"></option><option value="example.org"></option><option value="test.local"></option>
-    </datalist>
-
-    <div class="results">
-      <div class="results-head">
-        <span class="count" id="count"></span>
-        <button class="btn" type="button" id="copy-all">Copiar todos</button>
+    <div class="block reader" id="reader" hidden>
+      <div class="row"><button class="btn small" type="button" id="back">← Volver a la bandeja</button></div>
+      <div class="reader-head">
+        <div class="subj" id="r-subj"></div>
+        <div class="from" id="r-from"></div>
       </div>
-      <ol class="list" id="list"></ol>
+      <div class="row" id="r-code-row" hidden><span class="label">Código detectado</span><span class="code-pill" id="r-code"></span></div>
+      <div class="links" id="r-links"></div>
+      <iframe class="body" id="r-html" title="Contenido del correo" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
+      <pre class="body" id="r-text" hidden></pre>
     </div>
   </section>
 
-  <footer>Consejo: estas son ideas. Para saber si una dirección está libre, intenta registrarla en el proveedor que elijas.</footer>
+  <div class="notes">
+    <p>Las direcciones y los mensajes los proporciona el servicio público <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>. El buzón queda guardado en este navegador; si lo borras o cambias de dispositivo, pierdes el acceso.</p>
+    <p>Algunas páginas bloquean los correos temporales. Úsalo para pruebas y para registros donde no quieras dar tu correo personal, no para cuentas importantes que necesites recuperar.</p>
+  </div>
 </div>
 
 <script>
 (function () {
+  const API = "https://api.mail.tm";
+  const KEY = "gc-mailbox";
   const $ = (id) => document.getElementById(id);
-  const list = $("list"), count = $("count");
-  let current = [];
+  let acct = null;          // {id, address, password, token, created}
+  let domains = [];
+  let timer = null;
+  let seen = new Set();
 
-  const clean = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "").trim();
-  const domainOf = (s) => (s.trim().replace(/^@+/, "").toLowerCase() || "example.com");
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const num = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  /* ---------- API ---------- */
+  async function api(path, opts = {}) {
+    const headers = { Accept: "application/json", ...(opts.body ? { "Content-Type": "application/json" } : {}) };
+    if (acct && acct.token && !opts.noAuth) headers.Authorization = "Bearer " + acct.token;
+    const res = await fetch(API + path, { method: opts.method || "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    if (res.status === 204) return null;
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) { const err = new Error((data && (data.detail || data.message || data["hydra:description"])) || ("Error " + res.status)); err.status = res.status; throw err; }
+    return data;
+  }
+  const members = (d) => Array.isArray(d) ? d : (d && d["hydra:member"]) || [];
 
-  function render(addrs) {
-    current = addrs;
-    list.innerHTML = "";
-    if (!addrs.length) {
-      list.innerHTML = '<li class="empty">Escribe al menos un nombre para ver ideas.</li>';
-      count.textContent = "0 direcciones";
-      return;
+  /* ---------- Helpers ---------- */
+  const rand = (n) => { const a = "abcdefghijklmnopqrstuvwxyz0123456789"; let s = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (const x of b) s += a[x % a.length]; return s; };
+  const WORDS = ["sol","luna","rio","nube","faro","cometa","brisa","zorro","lince","roble","coral","pixel","cielo","halcon","marea","tango","canela","trigo"];
+  const randomUser = () => WORDS[Math.floor(Math.random() * WORDS.length)] + WORDS[Math.floor(Math.random() * WORDS.length)] + rand(3);
+  const cleanUser = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9._-]/g, "").replace(/^[._-]+|[._-]+$/g, "");
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(acct)); } catch (e) {} };
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
+  const clear = () => { try { localStorage.removeItem(KEY); } catch (e) {} };
+  const fmtTime = (iso) => { const d = new Date(iso); const today = new Date().toDateString() === d.toDateString();
+    return today ? d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("es", { day: "numeric", month: "short" }); };
+
+  function status(text, isErr) {
+    $("status").classList.toggle("err", !!isErr);
+    $("status").querySelector(".dot").classList.toggle("live", !isErr && !!acct);
+    $("status-text").textContent = text;
+  }
+  function busy(on) { ["create", "delete", "refresh"].forEach((id) => { $(id).disabled = on; }); }
+
+  function showAccount() {
+    $("address").textContent = acct ? acct.address : "Sin dirección";
+    $("meta").hidden = !acct;
+    if (acct) {
+      $("pass").textContent = acct.password;
+      $("created").textContent = "Creada: " + new Date(acct.created).toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
     }
-    addrs.forEach((a, i) => {
-      const [user, dom] = a.split("@");
+  }
+
+  /* ---------- Cuenta ---------- */
+  async function loadDomains() {
+    const list = members(await api("/domains?page=1", { noAuth: true })).filter((d) => d.isActive !== false && d.isPrivate !== true);
+    domains = list.map((d) => d.domain);
+    if (!domains.length) throw new Error("El servicio no tiene dominios disponibles ahora mismo.");
+    $("domain").innerHTML = "";
+    domains.forEach((d) => { const o = document.createElement("option"); o.value = d; o.textContent = "@" + d; $("domain").appendChild(o); });
+  }
+
+  async function createAccount(user) {
+    const domain = $("domain").value || domains[0];
+    const password = rand(14);
+    let name = user || randomUser();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const address = name + "@" + domain;
+      try {
+        const created = await api("/accounts", { method: "POST", body: { address, password }, noAuth: true });
+        const tok = await api("/token", { method: "POST", body: { address, password }, noAuth: true });
+        acct = { id: created.id || tok.id, address, password, token: tok.token, created: Date.now() };
+        save(); seen = new Set(); return;
+      } catch (e) {
+        if (e.status === 422 && !user) { name = randomUser(); continue; }
+        if (e.status === 422) throw new Error("Esa dirección ya está ocupada. Prueba con otro nombre.");
+        if (e.status === 429) throw new Error("Demasiadas solicitudes. Espera unos segundos y vuelve a intentarlo.");
+        throw e;
+      }
+    }
+    throw new Error("No se pudo crear la dirección. Inténtalo de nuevo.");
+  }
+
+  async function relogin() {
+    const tok = await api("/token", { method: "POST", body: { address: acct.address, password: acct.password }, noAuth: true });
+    acct.token = tok.token; acct.id = tok.id || acct.id; save();
+  }
+
+  /* ---------- Bandeja ---------- */
+  async function fetchInbox(manual) {
+    if (!acct) return;
+    try {
+      let data;
+      try { data = await api("/messages?page=1"); }
+      catch (e) { if (e.status === 401) { await relogin(); data = await api("/messages?page=1"); } else throw e; }
+      renderInbox(members(data));
+      status("Bandeja activa · última revisión " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } catch (e) {
+      if (e.status === 401 || e.status === 404) { status("Este buzón ya no existe. Crea una dirección nueva.", true); stopPolling(); return; }
+      status(manual ? "No se pudo actualizar: " + e.message : "Sin conexión con el servicio. Reintentando…", true);
+    }
+  }
+
+  function renderInbox(list) {
+    const ul = $("msgs");
+    ul.innerHTML = "";
+    $("empty").hidden = list.length > 0;
+    ul.hidden = list.length === 0;
+    const fresh = list.filter((m) => !seen.has(m.id));
+    list.forEach((m) => {
+      seen.add(m.id);
       const li = document.createElement("li");
-      li.style.animationDelay = Math.min(i * 15, 300) + "ms";
-      li.innerHTML = '<span class="idx"></span><span class="addr"><span class="u"></span><span class="dom"></span></span><button class="copy" type="button">Copiar</button>';
-      li.querySelector(".idx").textContent = String(i + 1).padStart(2, "0");
-      li.querySelector(".u").textContent = user;
-      li.querySelector(".dom").textContent = "@" + dom;
-      li.querySelector(".copy").addEventListener("click", (e) => copy(a, e.currentTarget, li.querySelector(".addr")));
-      list.appendChild(li);
+      const b = document.createElement("div");
+      b.className = "msg" + (m.seen ? "" : " unread");
+      b.tabIndex = 0; b.setAttribute("role", "button");
+      b.innerHTML = '<span class="from"></span><span class="time"></span><span class="subj"></span><span class="intro"></span>';
+      b.querySelector(".from").textContent = (m.from && (m.from.name || m.from.address)) || "Remitente desconocido";
+      b.querySelector(".time").textContent = fmtTime(m.createdAt);
+      b.querySelector(".subj").textContent = m.subject || "(sin asunto)";
+      b.querySelector(".intro").textContent = m.intro || "";
+      const open = () => openMessage(m.id);
+      b.addEventListener("click", open);
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      li.appendChild(b); ul.appendChild(li);
     });
-    count.textContent = addrs.length + (addrs.length === 1 ? " dirección" : " direcciones");
+    if (fresh.length && document.hidden) document.title = "(" + fresh.length + ") Generador de Correos";
   }
 
-  function copy(text, btn, fallbackEl) {
-    const ok = () => { const t = btn.textContent; btn.textContent = "Copiado"; btn.classList.add("done");
-      setTimeout(() => { btn.textContent = t; btn.classList.remove("done"); }, 1400); };
-    const fallback = () => { const r = document.createRange(); r.selectNodeContents(fallbackEl);
-      const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selecciona y copia"; };
-    try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+  function startPolling() { stopPolling(); fetchInbox(); timer = setInterval(fetchInbox, 5000); }
+  function stopPolling() { if (timer) clearInterval(timer); timer = null; }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "Generador de Correos"; });
+
+  /* ---------- Lector ---------- */
+  function findCode(text) {
+    const m = (text || "").match(/(?:c[oó]digo|code|verification|verificaci[oó]n|OTP|PIN)[^0-9A-Z]{0,40}\b([0-9]{4,8}|[A-Z0-9]{6,8})\b/i) || (text || "").match(/\b(\d{6})\b/);
+    return m ? m[1] : "";
+  }
+  function findLinks(text, html) {
+    const set = new Set();
+    const re = /https?:\/\/[^\s"'<>)\]]+/g;
+    [text || "", html || ""].forEach((s) => (s.match(re) || []).forEach((u) => set.add(u.replace(/&amp;/g, "&").replace(/[.,;]+$/, ""))));
+    return [...set].filter((u) => /verif|confirm|activ|valid|token|signup|register|login|auth|click/i.test(u)).slice(0, 4);
   }
 
-  $("copy-all").addEventListener("click", (e) => copy(current.join("\n"), e.currentTarget, list));
-
-  /* ---- Desde el nombre ---- */
-  function fromName() {
-    const n = clean($("n-nombre").value).split(/\s+/).filter(Boolean);
-    const a = clean($("n-apellido").value).split(/\s+/).filter(Boolean);
-    const x = clean($("n-extra").value).replace(/\s+/g, "");
-    const dom = domainOf($("n-dominio").value);
-    const seps = [""];
-    if ($("n-puntos").checked) seps.push(".");
-    if ($("n-guiones").checked) seps.push("_");
-    const useX = $("n-extras").checked && x;
-    if (!n.length && !a.length) return [];
-
-    const first = n[0] || "", ap1 = a[0] || "", ap2 = a[1] || "";
-    const fullFirst = n.join(""), ini = n.map((w) => w[0]).join("");
-    const bases = new Set();
-    for (const s of seps) {
-      const add = (...parts) => { const p = parts.filter(Boolean); if (p.length) bases.add(p.join(s)); };
-      add(first, ap1); add(fullFirst, ap1); add(ap1, first); add(ini, ap1);
-      add(first, ap1 ? ap1[0] : ""); add(first, ap1, ap2 ? ap2[0] : "");
-      add(first[0], ap1, ap2); add(first, ap2);
-      if (useX) { add(first, ap1, x); add(ini + ap1, x); add(first, x); }
-    }
-    if (first) bases.add(first);
-    if (ap1) bases.add(ini + ap1 + (ap2 ? ap2[0] : ""));
-    if (useX) bases.add(first + ap1 + x.slice(-2));
-    return [...bases].filter((b) => b.length >= 3 && b.length <= 64 && !/^[._]|[._]$/.test(b))
-      .map((b) => b + "@" + dom);
+  async function openMessage(id) {
+    status("Abriendo mensaje…");
+    try {
+      const m = await api("/messages/" + encodeURIComponent(id));
+      const html = Array.isArray(m.html) ? m.html.join("") : (m.html || "");
+      const text = m.text || "";
+      $("r-subj").textContent = m.subject || "(sin asunto)";
+      $("r-from").textContent = "De: " + ((m.from && (m.from.name ? m.from.name + " <" + m.from.address + ">" : m.from.address)) || "desconocido") + " · " + new Date(m.createdAt).toLocaleString("es");
+      const code = findCode(text || html.replace(/<[^>]+>/g, " "));
+      $("r-code").textContent = code; $("r-code-row").hidden = !code;
+      const links = findLinks(text, html);
+      $("r-links").innerHTML = "";
+      links.forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
+      if (html) {
+        $("r-html").srcdoc = '<base target="_blank"><meta name="referrer" content="no-referrer"><style>body{font-family:system-ui,sans-serif;color:#16213a;margin:12px}img{max-width:100%;height:auto}</style>' + html;
+        $("r-html").hidden = false; $("r-text").hidden = true;
+      } else {
+        $("r-text").textContent = text || "(mensaje vacío)";
+        $("r-text").hidden = false; $("r-html").hidden = true;
+      }
+      $("inbox-block").hidden = true; $("reader").hidden = false;
+      $("reader").scrollIntoView({ behavior: "smooth", block: "start" });
+      api("/messages/" + encodeURIComponent(id), { method: "PATCH", body: { seen: true } }).catch(() => {});
+      fetchInbox();
+    } catch (e) { status("No se pudo abrir el mensaje: " + e.message, true); }
   }
+  $("back").addEventListener("click", () => { $("reader").hidden = true; $("inbox-block").hidden = false; $("r-html").srcdoc = ""; });
 
-  /* ---- Aleatorios ---- */
-  const NOMBRES = ["lucia","mateo","sofia","santiago","valentina","diego","camila","nicolas","isabella","martin","ana","pablo","elena","javier","carla","andres","paula","gabriel","julia","tomas","sara","hugo","laura","daniel","emma","bruno"];
-  const APELLIDOS = ["garcia","rodriguez","lopez","martinez","gonzalez","perez","sanchez","ramirez","torres","flores","rivera","gomez","diaz","moreno","ruiz","castro","vargas","romero","herrera","medina","ortiz","silva","rojas","navarro"];
-  const PALABRAS = ["sol","luna","rio","nube","faro","cometa","trigo","brisa","zorro","lince","roble","coral","ambar","pixel","cielo","volcan","halcon","marea","tango","canela"];
-
-  function randomOne(estilo) {
-    if (estilo === "persona") {
-      const f = pick(NOMBRES), l = pick(APELLIDOS), s = pick([".", "_", ""]);
-      return pick([f + s + l, f[0] + s + l, f + s + l + num(1, 99), l + s + f, f + s + l[0] + num(10, 999)]);
-    }
-    if (estilo === "palabras") return pick(PALABRAS) + pick([".", "_", ""]) + pick(PALABRAS) + num(1, 9999);
-    const abc = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let s = pick("abcdefghijklmnopqrstuvwxyz".split(""));
-    for (let i = 0, n = num(7, 11); i < n; i++) s += abc[num(0, abc.length - 1)];
-    return s;
-  }
-
-  function random() {
-    const n = Math.max(1, Math.min(200, parseInt($("a-cantidad").value, 10) || 10));
-    const estilo = $("a-estilo").value, dom = domainOf($("a-dominio").value);
-    const out = new Set(); let guard = 0;
-    while (out.size < n && guard++ < n * 20) out.add(randomOne(estilo) + "@" + dom);
-    return [...out];
-  }
-
-  /* ---- Pestañas y formularios ---- */
-  const tabs = [["tab-nombre", "p-nombre", fromName], ["tab-azar", "p-azar", random]];
-  tabs.forEach(([t, p, fn]) => {
-    $(t).addEventListener("click", () => {
-      tabs.forEach(([t2, p2]) => { $(t2).setAttribute("aria-selected", t2 === t); $(p2).hidden = p2 !== p; });
-      try { localStorage.setItem("gc-tab", t); } catch (e) {}
-      render(fn());
-    });
-    $(p).addEventListener("submit", (e) => { e.preventDefault(); render(fn()); });
+  /* ---------- Acciones ---------- */
+  $("copy").addEventListener("click", (e) => {
+    if (!acct) return;
+    const btn = e.currentTarget;
+    const ok = () => { btn.textContent = "Copiado"; btn.classList.add("done"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+    const fb = () => { const r = document.createRange(); r.selectNodeContents($("address")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Pulsa Ctrl+C"; };
+    try { navigator.clipboard.writeText(acct.address).then(ok, fb); } catch (err) { fb(); }
   });
-  $("p-nombre").addEventListener("input", () => render(fromName()));
 
-  let start = "tab-nombre";
-  try { if (localStorage.getItem("gc-tab") === "tab-azar") start = "tab-azar"; } catch (e) {}
-  $(start).click();
+  $("new-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const raw = $("user").value.trim();
+    const user = raw ? cleanUser(raw) : "";
+    if (raw && user.length < 3) { status("El nombre necesita al menos 3 letras o números.", true); return; }
+    busy(true); stopPolling(); status("Creando dirección…");
+    try {
+      await createAccount(user);
+      $("user").value = ""; showAccount(); renderInbox([]); $("back").click(); startPolling();
+    } catch (err) { status(err.message, true); if (acct) startPolling(); }
+    finally { busy(false); }
+  });
+
+  let confirmDelete = false;
+  $("delete").addEventListener("click", async (e) => {
+    if (!acct) return;
+    const btn = e.currentTarget;
+    if (!confirmDelete) { confirmDelete = true; btn.textContent = "¿Seguro? Pulsa otra vez"; setTimeout(() => { confirmDelete = false; btn.textContent = "Eliminar buzón"; }, 4000); return; }
+    confirmDelete = false; btn.textContent = "Eliminar buzón";
+    busy(true); stopPolling(); status("Eliminando buzón…");
+    try { await api("/accounts/" + encodeURIComponent(acct.id), { method: "DELETE" }); } catch (err) {}
+    acct = null; clear(); showAccount(); renderInbox([]); $("back").click();
+    status("Buzón eliminado. Creando uno nuevo…");
+    try { await createAccount(""); showAccount(); startPolling(); } catch (err) { status(err.message, true); }
+    busy(false);
+  });
+
+  $("refresh").addEventListener("click", () => fetchInbox(true));
+
+  /* ---------- Inicio ---------- */
+  (async function init() {
+    busy(true);
+    try {
+      await loadDomains();
+      const stored = load();
+      if (stored && stored.address && stored.password) {
+        acct = stored;
+        const dom = acct.address.split("@")[1];
+        if (domains.includes(dom)) $("domain").value = dom;
+        showAccount(); status("Recuperando tu buzón…");
+        try { await relogin(); } catch (e) { acct = null; clear(); }
+      }
+      if (!acct) { status("Creando dirección…"); await createAccount(""); }
+      showAccount(); startPolling();
+    } catch (e) {
+      $("address").textContent = "No disponible";
+      status("No se pudo conectar con el servicio de correo (" + e.message + "). Revisa tu conexión y recarga la página.", true);
+    } finally { busy(false); }
+  })();
 })();
 </script>
 </body>

@@ -252,6 +252,32 @@
   window.fx.mail = (n) => { mailFx(n); rain(); };
   window.fx.rain = rain;
 
+  /* ---------- Temas y trajes de Carta ---------- */
+  const SKIN_MSG = { falopa: "¡Volvimos al original! 🌈", vaporwave: "A E S T H E T I C 🌴", matrix: "Despertá, Neo… 🟩", argentina: "¡Vamos Argentinaaa! 🇦🇷☀️", sobrio: "Modo oficina activado 👔" };
+  function setSkin(skin, quiet) {
+    if (!SKIN_MSG[skin]) skin = "falopa";
+    if (skin === "falopa") document.documentElement.removeAttribute("data-skin"); else document.documentElement.setAttribute("data-skin", skin);
+    document.querySelectorAll("#skins .toy").forEach((b) => b.setAttribute("aria-pressed", b.dataset.skin === skin));
+    try { localStorage.setItem("gc-skin", skin); } catch (e) {}
+    if (!quiet) { say(SKIN_MSG[skin]); jump(true); }
+  }
+  document.querySelectorAll("#skins .toy").forEach((b) => b.addEventListener("click", () => setSkin(b.dataset.skin)));
+  const OUTFIT_MSG = { nada: "Así, al natural 😌", lentes: "Soy re facha con lentes 😎", corona: "Rey de los mails 👑", gorra: "Modo trapero 🧢", navidad: "¡Jo jo jo! 🎅", vincha: "Energía arcoíris 🌈", mate: "¿Un amargo? 🧉" };
+  function setOutfit(o, quiet) {
+    if (!OUTFIT_MSG[o]) o = "nada";
+    buddy.dataset.outfit = o;
+    document.querySelectorAll("#outfits .toy").forEach((b) => b.setAttribute("aria-pressed", b.dataset.outfit === o));
+    try { localStorage.setItem("gc-outfit", o); } catch (e) {}
+    if (!quiet) { say(OUTFIT_MSG[o]); jump(true); sfx.pop(); }
+  }
+  document.querySelectorAll("#outfits .toy").forEach((b) => b.addEventListener("click", () => setOutfit(b.dataset.outfit)));
+  (function restoreLook() {
+    let skin = "falopa", outfit = null;
+    try { skin = localStorage.getItem("gc-skin") || "falopa"; outfit = localStorage.getItem("gc-outfit"); } catch (e) {}
+    if (!outfit) { const d = new Date(); outfit = d.getMonth() === 11 ? "navidad" : "nada"; }  // en diciembre, Carta se pone el gorro
+    setSkin(skin, true); setOutfit(outfit, true);
+  })();
+
   /* ---------- Modo tranqui ---------- */
   const calmBtn = document.getElementById("calm");
   function paintCalm() { const on = document.body.classList.contains("calm"); calmBtn.setAttribute("aria-pressed", on); calmBtn.textContent = on ? "Tranqui: ON" : "Modo tranqui"; }
@@ -463,7 +489,7 @@
   try { history = JSON.parse(localStorage.getItem(HKEY) || "[]").filter((a) => a && a.address && PROVIDERS[a.p]); } catch (e) {}
   const saveH = () => { try { localStorage.setItem(HKEY, JSON.stringify(history)); } catch (e) {} };
   function forget(address) { history = history.filter((x) => x.address !== address); saveH(); renderBoxes(); }
-  function remember(a) { if (!a) return; history = [a, ...history.filter((x) => x.address !== a.address)].slice(0, 8); saveH(); renderBoxes(); }
+  function remember(a) { if (!a) return; history = [a, ...history.filter((x) => x.address !== a.address)].slice(0, 20); saveH(); renderBoxes(); }
   function renderBoxes() {
     const list = history.filter((x) => !acct || x.address !== acct.address);
     $("boxes-block").hidden = list.length === 0;
@@ -572,30 +598,88 @@
     return [...set].filter((u) => /verif|confirm|activ|valid|token|signup|register|login|auth|click/i.test(u)).slice(0, 4);
   }
 
+  /* ---------- Mails guardados (no expiran: quedan en este navegador) ---------- */
+  const store = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      const r = indexedDB.open("gc", 1);
+      r.onupgradeneeded = () => { const st = r.result.createObjectStore("mails", { keyPath: "key" }); st.createIndex("savedAt", "savedAt"); };
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    }));
+    const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction("mails", mode); const out = fn(t.objectStore("mails")); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+    return {
+      put: (m) => tx("readwrite", (st) => st.put(m)),
+      all: () => tx("readonly", (st) => st.getAll()),
+      del: (key) => tx("readwrite", (st) => st.delete(key)),
+      clear: () => tx("readwrite", (st) => st.clear()),
+    };
+  })();
+  const MAX_SAVED = 200;
+  let savedList = [];
+  async function refreshSaved() {
+    try { savedList = (await store.all()).sort((a, b) => b.savedAt - a.savedAt); } catch (e) { savedList = []; }
+    if (savedList.length > MAX_SAVED) { for (const old of savedList.slice(MAX_SAVED)) await store.del(old.key).catch(() => {}); savedList = savedList.slice(0, MAX_SAVED); }
+    const ul = $("saved"); ul.innerHTML = "";
+    $("saved-count").textContent = savedList.length ? savedList.length + (savedList.length === 1 ? " mail guardado" : " mails guardados") : "";
+    $("saved-empty").hidden = savedList.length > 0; $("saved-clear").hidden = savedList.length === 0;
+    savedList.forEach((m) => {
+      const li = document.createElement("li");
+      const b = document.createElement("div");
+      b.className = "msg"; b.tabIndex = 0; b.setAttribute("role", "button");
+      b.innerHTML = '<span class="from"></span><span class="time"></span><span class="subj"></span><span class="intro"></span>';
+      b.querySelector(".from").textContent = m.from || "Remitente desconocido";
+      b.querySelector(".time").textContent = fmtTime(m.date);
+      b.querySelector(".subj").textContent = m.subject || "(sin asunto)";
+      b.querySelector(".intro").textContent = "Para " + m.address;
+      const open = () => showMessage(m, true);
+      b.addEventListener("click", open);
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      const x = document.createElement("button");
+      x.className = "x"; x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "Borrar este mail guardado");
+      x.addEventListener("click", async () => { await store.del(m.key).catch(() => {}); refreshSaved(); });
+      li.className = "saved-item"; li.appendChild(b); li.appendChild(x); ul.appendChild(li);
+    });
+  }
+  let clearArmed = false;
+  $("saved-clear").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    if (!clearArmed) { clearArmed = true; btn.textContent = "¿Seguro? Tocá de nuevo"; setTimeout(() => { clearArmed = false; btn.textContent = "Borrar guardados"; }, 4000); return; }
+    clearArmed = false; btn.textContent = "Borrar guardados";
+    await store.clear().catch(() => {}); refreshSaved();
+  });
+
+  function showMessage(m, fromSaved) {
+    $("r-saved").hidden = !fromSaved;
+    $("r-subj").textContent = m.subject || "(sin asunto)";
+    $("r-from").textContent = "De: " + (m.from || "desconocido") + " · " + new Date(m.date).toLocaleString("es");
+    const code = findCode(m.text || m.html.replace(/<[^>]+>/g, " "));
+    $("r-code").textContent = code; $("r-code-row").hidden = !code;
+    if (code && window.fx) setTimeout(() => window.fx.code(code), 150);
+    $("r-links").innerHTML = "";
+    findLinks(m.text, m.html).forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
+    if (m.html) {
+      $("r-html").srcdoc = '<base target="_blank"><meta name="referrer" content="no-referrer"><style>body{font-family:system-ui,sans-serif;color:#16213a;margin:12px}img{max-width:100%;height:auto}</style>' + m.html;
+      $("r-html").hidden = false; $("r-text").hidden = true;
+    } else {
+      $("r-text").textContent = m.text || "(mensaje vacío)";
+      $("r-text").hidden = false; $("r-html").hidden = true;
+    }
+    $("inbox-block").hidden = true; $("saved-block").hidden = true; $("reader").hidden = false;
+    $("reader").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   async function openMessage(id) {
     status("Abriendo mensaje…");
     try {
       const m = await prov.read(acct, id);
-      $("r-subj").textContent = m.subject || "(sin asunto)";
-      $("r-from").textContent = "De: " + (m.from || "desconocido") + " · " + new Date(m.date).toLocaleString("es");
-      const code = findCode(m.text || m.html.replace(/<[^>]+>/g, " "));
-      $("r-code").textContent = code; $("r-code-row").hidden = !code;
-      if (code && window.fx) setTimeout(() => window.fx.code(code), 150);
-      $("r-links").innerHTML = "";
-      findLinks(m.text, m.html).forEach((u) => { const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Abrir enlace: " + u.replace(/^https?:\/\//, ""); $("r-links").appendChild(a); });
-      if (m.html) {
-        $("r-html").srcdoc = '<base target="_blank"><meta name="referrer" content="no-referrer"><style>body{font-family:system-ui,sans-serif;color:#16213a;margin:12px}img{max-width:100%;height:auto}</style>' + m.html;
-        $("r-html").hidden = false; $("r-text").hidden = true;
-      } else {
-        $("r-text").textContent = m.text || "(mensaje vacío)";
-        $("r-text").hidden = false; $("r-html").hidden = true;
-      }
-      $("inbox-block").hidden = true; $("reader").hidden = false;
-      $("reader").scrollIntoView({ behavior: "smooth", block: "start" });
+      showMessage(m, false);
+      // Lo guardamos para que no se pierda aunque el servicio lo borre.
+      store.put({ key: acct.address + "|" + id, address: acct.address, id, subject: m.subject || "", from: m.from || "", date: m.date, html: (m.html || "").slice(0, 400000), text: (m.text || "").slice(0, 100000), savedAt: Date.now() })
+        .then(refreshSaved).catch(() => {});
       fetchInbox();
     } catch (e) { status("No se pudo abrir el mensaje: " + e.message, true); }
   }
-  $("back").addEventListener("click", () => { $("reader").hidden = true; $("inbox-block").hidden = false; $("r-html").srcdoc = ""; });
+  $("back").addEventListener("click", () => { $("reader").hidden = true; $("inbox-block").hidden = false; $("saved-block").hidden = false; $("r-html").srcdoc = ""; });
+  refreshSaved();
 
   /* ---------- Acciones ---------- */
   $("copy").addEventListener("click", (e) => {
@@ -754,6 +838,7 @@
     stopPolling();
     if (acct) { try { await PROVIDERS[acct.p].remove(acct); } catch (err) {} }
     try { Object.keys(localStorage).filter((k) => k.startsWith("gc-")).forEach((k) => localStorage.removeItem(k)); } catch (err) {}
+    try { await store.clear(); indexedDB.deleteDatabase("gc"); } catch (err) {}
     try { if (window.caches) { const keys = await caches.keys(); await Promise.all(keys.map((k) => caches.delete(k))); } } catch (err) {}
     $("wipe-msg").textContent = "Listo, borramos todo. Recargando…";
     setTimeout(() => location.reload(), 900);

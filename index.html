@@ -277,6 +277,36 @@ a.card:hover { transform: rotate(-1.2deg) scale(1.03); border-color: var(--acid)
 .card span { font-size: 13px; color: var(--muted); }
 .card .go { color: var(--cyan); font-weight: 700; font-size: 13px; }
 
+/* Mails guardados */
+.saved-item { display: flex; gap: 8px; align-items: stretch; }
+.saved-item .msg { flex: 1; min-width: 0; }
+.saved-item .x { background: none; border: 2px solid var(--line); border-radius: 12px; color: var(--muted); font-size: 20px; padding: 0 12px; cursor: pointer; }
+.saved-item .x:hover { color: var(--err); border-color: var(--err); }
+.saved-note { font-size: 13px; font-weight: 700; color: var(--acid); }
+
+/* Personalizá: temas y trajes */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips .toy[aria-pressed="true"] { background: var(--acid); border-color: var(--acid); color: var(--void); box-shadow: none; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.5); }
+.buddy .acc { display: none; }
+.buddy[data-outfit="lentes"] .acc-lentes, .buddy[data-outfit="corona"] .acc-corona, .buddy[data-outfit="navidad"] .acc-navidad,
+.buddy[data-outfit="gorra"] .acc-gorra, .buddy[data-outfit="vincha"] .acc-vincha, .buddy[data-outfit="mate"] .acc-mate { display: inline; }
+.buddy[data-outfit]:not([data-outfit="nada"]) .antena { display: none; }
+
+html[data-skin="vaporwave"] { --void: #1a0b2e; --pink: #ff71ce; --acid: #fffb96; --cyan: #01cdfe; --orange: #b967ff; --muted: #e0c3ff; --ok: #05ffa1; }
+html[data-skin="matrix"] { --void: #020a04; --pink: #00ff66; --acid: #7dff9b; --cyan: #00d45a; --orange: #b6ffc8; --muted: #7fbf8f; --ink: #d8ffe0; --ok: #7dff9b; --line: rgba(125,255,155,.28); --glass: rgba(0,12,4,.8); --glass-2: rgba(0,30,10,.7); }
+html[data-skin="argentina"] { --void: #0b2545; --pink: #74acdf; --acid: #f6b40e; --cyan: #ffffff; --orange: #74acdf; --muted: #cfe3f5; --ok: #f6b40e; --line: rgba(207,227,245,.3); --glass: rgba(11,37,69,.78); --glass-2: rgba(20,60,105,.6); }
+html[data-skin="sobrio"] { --void: #0f1115; --pink: #7aa2f7; --acid: #e6e9ef; --cyan: #7aa2f7; --orange: #a9b1d6; --muted: #9aa3b5; --ink: #eef1f6; --ok: #9ece6a; --line: rgba(154,163,181,.28); --glass: rgba(15,17,21,.86); --glass-2: rgba(30,34,42,.8); }
+html[data-skin="matrix"] #plasma { filter: blur(18px) grayscale(1) sepia(1) hue-rotate(70deg) saturate(4) brightness(.45) !important; }
+html[data-skin="argentina"] #plasma { filter: blur(18px) saturate(.9) hue-rotate(190deg) !important; }
+html[data-skin="vaporwave"] #plasma { filter: blur(18px) saturate(1.6) hue-rotate(-30deg) !important; }
+html[data-skin="sobrio"] #plasma, html[data-skin="sobrio"] #floaters { display: none; }
+html[data-skin="sobrio"] body { background: var(--void); }
+html[data-skin="matrix"] h1 .l { color: hsl(calc(130deg + var(--i) * 3deg) 100% calc(55% + var(--i) * .8%)); }
+html[data-skin="argentina"] h1 .l { color: var(--l-arg, #74acdf); }
+html[data-skin="argentina"] h1 .l:nth-child(even) { color: #ffffff; }
+html[data-skin="argentina"] .at { background: radial-gradient(circle, #f6b40e 55%, #c98e00 56%); }
+
 /* ¿Te hackearon? y Mails listos */
 .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 .two-col > .block { border-top: 1px dashed var(--line); align-content: start; min-width: 0; }
@@ -302,6 +332,11 @@ a.btn { text-decoration: none; display: inline-block; }
 
 /* Confianza y seguridad */
 .sr-svg { position: absolute; }
+.sw-falopa { background: linear-gradient(135deg, #ff2bd6, #c6ff00, #00f0ff); }
+.sw-vapor { background: linear-gradient(135deg, #ff71ce, #01cdfe, #b967ff); }
+.sw-matrix { background: linear-gradient(135deg, #020a04, #00ff66); }
+.sw-arg { background: linear-gradient(180deg, #74acdf 33%, #fff 33% 66%, #74acdf 66%); }
+.sw-sobrio { background: linear-gradient(135deg, #0f1115, #7aa2f7); }
 .trust-badges { display: flex; flex-wrap: wrap; gap: 8px; }
 .trust-badges span {
   font: 11px var(--font-display); text-transform: uppercase; letter-spacing: .04em;
@@ -424,6 +459,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <a class="toy" href="#tools">Herramientas</a>
       <a class="toy" href="#hackeo">¿Te hackearon?</a>
       <a class="toy" href="#mails-listos">Mails listos</a>
+      <a class="toy" href="#extras">🎨 Personalizá</a>
       <a class="toy" href="#seguridad">🔒 Seguridad</a>
       <button class="toy" type="button" id="install" hidden>Instalar app</button>
     </div>
@@ -478,9 +514,21 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <div class="empty" id="empty"><div class="radar" aria-hidden="true"></div><strong>Esperando mails…</strong><span class="wait-line" id="wait-line">Consultando con los aliens…</span>Lo que llegue a esta dirección aparece acá solo. Revisamos cada 5 segundos.</div>
     </div>
 
+    <div class="block" id="saved-block">
+      <div class="inbox-head">
+        <h2>Guardados</h2>
+        <span class="hint" id="saved-count"></span>
+      </div>
+      <p class="hint">Cada mail que abrís queda guardado en este navegador, aunque el servicio lo borre o cambies de dirección.</p>
+      <ul class="msgs" id="saved"></ul>
+      <p class="hint" id="saved-empty">Todavía no guardaste nada. Abrí un mail y aparece acá.</p>
+      <div class="row"><button class="btn small ghost" type="button" id="saved-clear" hidden>Borrar guardados</button></div>
+    </div>
+
     <div class="block reader" id="reader" hidden>
       <div class="row"><button class="btn small" type="button" id="back">← Volver a la bandeja</button></div>
       <div class="reader-head">
+        <span class="saved-note" id="r-saved" hidden>⭐ Mail guardado en tu navegador</span>
         <div class="subj" id="r-subj"></div>
         <div class="from" id="r-from"></div>
       </div>
@@ -668,6 +716,39 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     </div>
   </section>
 
+  <section class="sheet strict" id="extras" aria-labelledby="t-extras">
+    <div class="sheet-in">
+      <div class="block">
+        <span class="label">Hacela tuya</span>
+        <h2 id="t-extras">Personalizá</h2>
+      </div>
+      <div class="two-col">
+        <div class="block">
+          <div class="tool-head"><span class="tool-ico" aria-hidden="true">🎨</span><h3>Tema</h3></div>
+          <div class="chips" id="skins" role="group" aria-label="Tema de colores">
+            <button class="toy" type="button" data-skin="falopa"><span class="swatch sw-falopa"></span>Falopa</button>
+            <button class="toy" type="button" data-skin="vaporwave"><span class="swatch sw-vapor"></span>Vaporwave</button>
+            <button class="toy" type="button" data-skin="matrix"><span class="swatch sw-matrix"></span>Matrix</button>
+            <button class="toy" type="button" data-skin="argentina"><span class="swatch sw-arg"></span>Argentina</button>
+            <button class="toy" type="button" data-skin="sobrio"><span class="swatch sw-sobrio"></span>Sobrio</button>
+          </div>
+        </div>
+        <div class="block">
+          <div class="tool-head"><span class="tool-ico" aria-hidden="true">👕</span><h3>Traje de Carta</h3></div>
+          <div class="chips" id="outfits" role="group" aria-label="Traje de Carta">
+            <button class="toy" type="button" data-outfit="nada">Sin nada</button>
+            <button class="toy" type="button" data-outfit="lentes">😎 Lentes</button>
+            <button class="toy" type="button" data-outfit="corona">👑 Corona</button>
+            <button class="toy" type="button" data-outfit="gorra">🧢 Gorra</button>
+            <button class="toy" type="button" data-outfit="navidad">🎅 Navidad</button>
+            <button class="toy" type="button" data-outfit="vincha">🌈 Vincha</button>
+            <button class="toy" type="button" data-outfit="mate">🧉 Mate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="sheet strict" id="seguridad" aria-labelledby="t-sec">
     <div class="sheet-in">
       <div class="block">
@@ -713,7 +794,13 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     <circle class="pupil" cx="40" cy="70" r="4.5" fill="#12002b"/><circle class="pupil" cx="80" cy="70" r="4.5" fill="#12002b"/>
     <path class="mouth-smile" d="M52 82 Q60 90 68 82" fill="none" stroke="#12002b" stroke-width="3.5" stroke-linecap="round"/>
     <ellipse class="mouth-o" cx="60" cy="85" rx="5" ry="6" fill="#12002b"/>
-    <path d="M60 6 L64 14 L60 12 L56 14 Z" fill="#c6ff00" stroke="#12002b" stroke-width="2"/>
+    <path class="antena" d="M60 6 L64 14 L60 12 L56 14 Z" fill="#c6ff00" stroke="#12002b" stroke-width="2"/>
+    <g class="acc acc-lentes"><rect x="27" y="61" width="26" height="17" rx="6" fill="#12002b"/><rect x="67" y="61" width="26" height="17" rx="6" fill="#12002b"/><path d="M53 67 H67" stroke="#12002b" stroke-width="3"/><path d="M31 65 l6 0" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/><path d="M71 65 l6 0" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></g>
+    <g class="acc acc-corona"><path d="M36 20 L40 -2 L50 10 L60 -8 L70 10 L80 -2 L84 20 Z" fill="#f6c30e" stroke="#12002b" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="10" r="3.5" fill="#ff2bd6"/><circle cx="46" cy="14" r="2.5" fill="#00f0ff"/><circle cx="74" cy="14" r="2.5" fill="#00f0ff"/></g>
+    <g class="acc acc-gorra"><path d="M32 21 Q34 -6 60 -6 Q86 -6 88 21 Z" fill="#00c2d6" stroke="#12002b" stroke-width="3"/><path d="M84 18 L112 20 Q108 27 84 24 Z" fill="#00c2d6" stroke="#12002b" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="-6" r="3" fill="#12002b"/></g>
+    <g class="acc acc-navidad"><path d="M34 18 Q52 -26 96 -4 L86 18 Z" fill="#e0233b" stroke="#12002b" stroke-width="3" stroke-linejoin="round"/><rect x="28" y="12" width="64" height="11" rx="5.5" fill="#fff" stroke="#12002b" stroke-width="3"/><circle cx="97" cy="-4" r="7" fill="#fff" stroke="#12002b" stroke-width="3"/></g>
+    <g class="acc acc-vincha"><rect x="4" y="16" width="112" height="9" rx="4.5" fill="#ff2bd6" stroke="#12002b" stroke-width="3"/><rect x="18" y="18" width="14" height="5" fill="#c6ff00"/><rect x="46" y="18" width="14" height="5" fill="#00f0ff"/><rect x="74" y="18" width="14" height="5" fill="#ff8a00"/><rect x="100" y="18" width="10" height="5" fill="#8b5cff"/></g>
+    <g class="acc acc-mate"><path d="M100 58 Q100 88 112 88 Q124 88 124 58 Z" fill="#8b4a1e" stroke="#12002b" stroke-width="3"/><ellipse cx="112" cy="58" rx="12" ry="4" fill="#3f7d2a" stroke="#12002b" stroke-width="2.5"/><path d="M116 60 L126 36" stroke="#c0c0c0" stroke-width="4" stroke-linecap="round"/><path d="M116 60 L126 36" stroke="#12002b" stroke-width="1" opacity=".4"/></g>
   </svg>
 </button>
 <div class="bubble" id="bubble" role="status" aria-live="polite" hidden></div>

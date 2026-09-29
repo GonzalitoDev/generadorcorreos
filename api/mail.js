@@ -1,14 +1,9 @@
 // Proxy hacia la API de mail.tm para que el navegador solo hable con este mismo dominio
 // (mail.tm no envía cabeceras CORS para otros orígenes).
+const { guard, send, rateLimited } = require("./_guard");
 const UPSTREAM = "https://api.mail.tm";
+const MAX_BODY = 4 * 1024;
 const ALLOWED = /^\/(domains|accounts|token|messages|me)(\/[A-Za-z0-9_-]+)?$/;
-
-function send(res, status, obj) {
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.end(JSON.stringify(obj));
-}
 
 function readBody(req) {
   if (req.body !== undefined && req.body !== null) {
@@ -18,7 +13,7 @@ function readBody(req) {
   }
   return new Promise((resolve) => {
     let data = "";
-    req.on("data", (c) => { data += c; });
+    req.on("data", (c) => { data += c; if (data.length > MAX_BODY) { resolve(data); req.destroy(); } });
     req.on("end", () => resolve(data));
     req.on("error", () => resolve(""));
   });
@@ -26,6 +21,7 @@ function readBody(req) {
 
 module.exports = async function handler(req, res) {
   try {
+    if (!guard(req, res, { bucket: "mail", max: 90 })) return;
     const url = new URL(req.url, "http://localhost");
     const path = url.searchParams.get("path") || "";
     let target;
@@ -40,10 +36,16 @@ module.exports = async function handler(req, res) {
 
     const headers = { "User-Agent": "generadorcorreos/1.0 (+https://generadorcorreos.vercel.app)" };
     if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+    // Crear buzones tiene un límite más bajo que leer la bandeja.
+    if (method === "POST" && target.pathname === "/accounts" && rateLimited(req, "mail-create", 10)) {
+      return send(res, 429, { detail: "Creaste muchos buzones seguidos. Esperá un minuto." });
+    }
     let body;
     if (method === "POST" || method === "PATCH") {
       headers["Content-Type"] = method === "PATCH" ? "application/merge-patch+json" : "application/json";
       body = (await readBody(req)) || "{}";
+      if (body.length > MAX_BODY) return send(res, 413, { detail: "Pedido demasiado grande" });
+      try { JSON.parse(body); } catch (e) { return send(res, 400, { detail: "Pedido inválido" }); }
     }
 
     // Probamos primero JSON plano y, si el servicio falla, el formato JSON-LD por defecto de mail.tm.

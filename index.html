@@ -462,6 +462,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <a class="toy" href="#extras">🎨 Personalizá</a>
       <a class="toy" href="#seguridad">🔒 Seguridad</a>
       <button class="toy" type="button" id="install" hidden>Instalar app</button>
+      <a class="toy" href="#app-android">📱 App Android</a>
     </div>
     <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
     <div class="trust-badges" aria-label="Garantías"><span>🔒 Conexión cifrada</span><span>🚫 Sin rastreadores</span><span>🍪 Sin cookies</span><span>👀 Código abierto</span></div>
@@ -551,6 +552,18 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
           <div class="tool-head"><span class="tool-ico" aria-hidden="true">📱</span><h3>QR de tu mail</h3></div>
           <p class="hint">Escanealo con el celular para pasar tu dirección sin tipearla.</p>
           <div class="qr-box" id="qr" role="img" aria-label="Código QR de tu dirección"><span class="qr-empty">Creando QR…</span></div>
+        </div>
+
+        <div class="block" id="app-android">
+          <div class="tool-head"><span class="tool-ico" aria-hidden="true">🤖</span><h3>App para Android</h3></div>
+          <p class="hint">Tené la página como app en tu celu, con el ícono de Carta. Se actualiza sola cada vez que mejoramos la web.</p>
+          <div class="row"><a class="btn primary" href="https://github.com/GonzalitoDev/generadorcorreos/releases/latest/download/generadorcorreos.apk" rel="noopener">Descargar APK</a></div>
+          <ol class="warn-list">
+            <li>Tocá <b>Descargar APK</b> desde el celular.</li>
+            <li>Abrí el archivo. Si Android pregunta, permití <b>instalar apps de esta fuente</b>.</li>
+            <li>Listo: buscá <b>Correos</b> en tus apps.</li>
+          </ol>
+          <p class="hint">La APK está firmada y se compila automáticamente desde el <a href="https://github.com/GonzalitoDev/generadorcorreos" target="_blank" rel="noopener">código abierto</a>. ¿iPhone? Abrí la página en Safari → Compartir → <b>Agregar a inicio</b>.</p>
         </div>
 
         <form class="block" id="pw-form">

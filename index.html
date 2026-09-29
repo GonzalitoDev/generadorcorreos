@@ -6,6 +6,10 @@
 <title>Generador de Correos</title>
 <meta name="description" content="Mails temporales reales, al toque. Recibí el código de verificación acá y registrate donde quieras.">
 <meta name="theme-color" content="#12002b">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script src="/vendor/qrcode.js" defer></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%92%8C%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -259,6 +263,30 @@ a.card:hover { transform: rotate(-1.2deg) scale(1.03); border-color: var(--acid)
 .card span { font-size: 13px; color: var(--muted); }
 .card .go { color: var(--cyan); font-weight: 700; font-size: 13px; }
 
+/* Herramientas */
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0; }
+.tools-grid .block { border-top: 1px dashed var(--line); align-content: start; min-width: 0; }
+.tool-head { display: flex; align-items: center; gap: 10px; }
+.tool-head h3 { margin: 0; font: 16px var(--font-display); text-transform: uppercase; }
+.tool-ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; background: var(--acid); box-shadow: 3px 3px 0 var(--pink); flex: none; }
+.qr-box { background: #fff; border-radius: 14px; padding: 10px; width: min(220px, 100%); aspect-ratio: 1; display: grid; place-items: center; box-shadow: 0 0 26px rgba(0,240,255,.45); }
+.qr-box svg, .qr-box img { width: 100%; height: auto; display: block; }
+.qr-box .qr-empty { color: #12002b; font-size: 13px; text-align: center; }
+.pw-out { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+.pw-out output { flex: 1 1 200px; min-width: 0; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,.45); border: 2px solid var(--cyan); font: 700 17px var(--font-mono); overflow-wrap: anywhere; user-select: all; color: var(--cyan); }
+.pw-opts { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+.pw-opts label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.pw-len { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.pw-len input { flex: 1; accent-color: var(--pink); }
+.pw-len b { font: 700 15px var(--font-mono); min-width: 2ch; color: var(--acid); }
+.meter { height: 10px; border-radius: 999px; background: rgba(0,0,0,.45); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .25s, background .25s; }
+.nick-styles { display: flex; flex-wrap: wrap; gap: 8px; }
+.nick-styles .toy[aria-pressed="true"] { background: var(--acid); border-color: var(--acid); color: var(--void); box-shadow: none; }
+.nicks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.nicks li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.35); border: 2px solid var(--line); }
+.nicks .n { flex: 1; min-width: 0; font: 600 15px var(--font-mono); overflow-wrap: anywhere; user-select: all; }
+
 /* Mejoras */
 .boxes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .boxes li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.35); border: 2px dashed var(--line); }
@@ -339,6 +367,8 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <button class="toy" type="button" id="sound" aria-pressed="true">Sonido: sí</button>
       <button class="toy" type="button" id="calm" aria-pressed="false">Modo tranqui</button>
       <a class="toy" href="#discord">¿Para Discord?</a>
+      <a class="toy" href="#tools">Herramientas</a>
+      <button class="toy" type="button" id="install" hidden>Instalar app</button>
     </div>
     <p class="lede">Un mail <b>real</b> en un segundo. Pegalo donde te quieras registrar y el código de verificación te cae acá mismo. Sin cuentas, sin vueltas.</p>
   </header>
@@ -401,6 +431,51 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       <iframe class="body" id="r-html" title="Contenido del correo" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
       <pre class="body" id="r-text" hidden></pre>
     </div>
+    </div>
+  </section>
+
+  <section class="sheet strict" id="tools" aria-labelledby="t-tools">
+    <div class="sheet-in">
+      <div class="block">
+        <span class="label">Para registrarte más rápido</span>
+        <h2 id="t-tools">Herramientas</h2>
+      </div>
+      <div class="tools-grid">
+        <div class="block">
+          <div class="tool-head"><span class="tool-ico" aria-hidden="true">📱</span><h3>QR de tu mail</h3></div>
+          <p class="hint">Escanealo con el celular para pasar tu dirección sin tipearla.</p>
+          <div class="qr-box" id="qr" role="img" aria-label="Código QR de tu dirección"><span class="qr-empty">Creando QR…</span></div>
+        </div>
+
+        <form class="block" id="pw-form">
+          <div class="tool-head"><span class="tool-ico" aria-hidden="true">🔐</span><h3>Contraseña segura</h3></div>
+          <div class="pw-out"><output id="pw" aria-live="polite"></output><button class="btn small" type="button" id="pw-copy">Copiar</button></div>
+          <div class="meter" aria-hidden="true"><i id="pw-meter"></i></div>
+          <p class="hint" id="pw-strength"></p>
+          <div class="pw-len"><label for="pw-len">Largo</label><input type="range" id="pw-len" min="8" max="40" value="16"><b id="pw-len-v">16</b></div>
+          <div class="pw-opts">
+            <label><input type="checkbox" id="pw-up" checked> Mayúsculas</label>
+            <label><input type="checkbox" id="pw-num" checked> Números</label>
+            <label><input type="checkbox" id="pw-sym" checked> Símbolos</label>
+            <label><input type="checkbox" id="pw-easy"> Sin letras confusas (l, 1, O, 0)</label>
+          </div>
+          <div class="row"><button class="btn primary" type="submit">Otra contraseña</button></div>
+          <p class="hint">Se genera en tu navegador y no se guarda en ningún lado. Anotala en tu gestor de contraseñas.</p>
+        </form>
+
+        <div class="block">
+          <div class="tool-head"><span class="tool-ico" aria-hidden="true">🎮</span><h3>Nicks para Discord</h3></div>
+          <div class="nick-styles" role="group" aria-label="Estilo de nick">
+            <button class="toy" type="button" data-style="gamer" aria-pressed="true">Gamer</button>
+            <button class="toy" type="button" data-style="falopa" aria-pressed="false">Falopa</button>
+            <button class="toy" type="button" data-style="tierno" aria-pressed="false">Tierno</button>
+            <button class="toy" type="button" data-style="dark" aria-pressed="false">Dark</button>
+          </div>
+          <ul class="nicks" id="nicks"></ul>
+          <div class="row"><button class="btn primary" type="button" id="nick-more">Otros nicks</button></div>
+          <p class="hint">Cumplen las reglas de Discord: minúsculas, números, «_» y «.», de 2 a 32 caracteres.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -572,6 +647,8 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     "El modo viaje no lo recomienda ningún médico.",
     "Tocá en cualquier lado de la página. Dale, animate.",
     "¿Discord no acepta el mail? Bajá a la parte de «sitios exigentes».",
+    "Abajo hay un generador de contraseñas. Usá una distinta en cada lado.",
+    "¿Necesitás un nick? Probá el estilo «Falopa». Es mi favorito.",
     "Escribí «falopa» en cualquier lado de la página. No te digo más.",
     "Mi primo es un telegrama. Está viejito.",
     "Cero spam en tu mail posta. De nada.",
@@ -887,6 +964,7 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       $("created").textContent = "Creada: " + new Date(acct.created).toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
       $("provider").textContent = "Servicio: " + PROVIDERS[acct.p].name;
     }
+    drawQR(acct ? acct.address : "");
   }
 
   async function useProvider(p) {
@@ -909,6 +987,18 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
       }
     }
     throw lastErr || new Error("Ningún servicio de correo respondió");
+  }
+
+  /* ---------- QR de la dirección ---------- */
+  function drawQR(text) {
+    const box = $("qr");
+    if (!text) { box.innerHTML = '<span class="qr-empty">Sin dirección todavía</span>'; return; }
+    if (typeof qrcode !== "function") { setTimeout(() => drawQR(acct ? acct.address : ""), 300); return; }
+    try {
+      const q = qrcode(0, "M"); q.addData(text); q.make();
+      box.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+      box.setAttribute("aria-label", "Código QR de " + text);
+    } catch (e) { box.innerHTML = '<span class="qr-empty">No se pudo crear el QR</span>'; }
   }
 
   /* ---------- Historial de buzones ---------- */
@@ -1114,6 +1204,86 @@ body.trip .buddy svg { animation: spin 3s linear infinite; }
     const ok = () => { if (window.boom) window.boom(btn); if (window.fx) window.fx.say("Código " + code + " copiado. ¡A pegarlo!"); };
     const fb = () => { const r = document.createRange(); r.selectNodeContents(btn); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); };
     try { navigator.clipboard.writeText(code).then(ok, fb); } catch (err) { fb(); }
+  });
+
+  /* ---------- Contraseñas ---------- */
+  function secureInt(n) { const b = new Uint32Array(1); const lim = Math.floor(0x100000000 / n) * n; do { crypto.getRandomValues(b); } while (b[0] >= lim); return b[0] % n; }
+  function makePassword() {
+    const easy = $("pw-easy").checked;
+    const strip = (set) => easy ? set.replace(/[lI1O0o]/g, "") : set;
+    const sets = [strip("abcdefghijklmnopqrstuvwxyz")];
+    if ($("pw-up").checked) sets.push(strip("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+    if ($("pw-num").checked) sets.push(strip("0123456789"));
+    if ($("pw-sym").checked) sets.push("!@#$%&*?-_=+.:;");
+    const len = +$("pw-len").value, all = sets.join("");
+    const chars = sets.map((set) => set[secureInt(set.length)]);        // al menos uno de cada tipo
+    while (chars.length < len) chars.push(all[secureInt(all.length)]);
+    for (let i = chars.length - 1; i > 0; i--) { const j = secureInt(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+    const pw = chars.join("");
+    $("pw").textContent = pw; $("pw-len-v").textContent = len;
+    const bits = Math.round(len * Math.log2(all.length));
+    const [label, color, pct] = bits < 45 ? ["Débil", "var(--err)", 25] : bits < 70 ? ["Aceptable", "var(--orange)", 55] : bits < 100 ? ["Fuerte", "var(--acid)", 80] : ["Blindada 🛡️", "var(--cyan)", 100];
+    $("pw-meter").style.width = pct + "%"; $("pw-meter").style.background = color;
+    $("pw-strength").textContent = label + " · " + bits + " bits de entropía";
+  }
+  $("pw-form").addEventListener("submit", (e) => { e.preventDefault(); makePassword(); if (window.fx) window.fx.say("Contraseña nueva, recién salida del horno 🔐"); });
+  ["pw-len", "pw-up", "pw-num", "pw-sym", "pw-easy"].forEach((id) => $(id).addEventListener("input", makePassword));
+  $("pw-copy").addEventListener("click", (e) => {
+    const btn = e.currentTarget, pw = $("pw").textContent;
+    const ok = () => { btn.textContent = "¡Copiada!"; btn.classList.add("done"); if (window.boom) window.boom(btn); if (window.fx) window.fx.say("Copiada. Guardala en un lugar seguro 🤫"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+    const fb = () => { const r = document.createRange(); r.selectNodeContents($("pw")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = "Pulsá Ctrl+C"; };
+    try { navigator.clipboard.writeText(pw).then(ok, fb); } catch (err) { fb(); }
+  });
+  makePassword();
+
+  /* ---------- Nicks ---------- */
+  const NICK = {
+    gamer: { a: ["shadow", "toxic", "turbo", "neon", "ghost", "cyber", "savage", "frost", "blaze", "hyper", "void", "rogue", "nova", "ultra"], b: ["wolf", "sniper", "ninja", "reaper", "dragon", "viper", "titan", "hunter", "phantom", "raptor", "knight", "storm"] },
+    falopa: { a: ["milanesa", "carpincho", "alfajor", "choripan", "mate", "fernet", "empanada", "chancleta", "tostada", "zapallo", "mapache", "ornitorrinco"], b: ["cosmico", "turbo", "galactico", "fachero", "picante", "mistico", "supremo", "cuantico", "sideral", "fosforito", "rebelde", "salvaje"] },
+    tierno: { a: ["mochi", "pompom", "kiwi", "bunny", "peachy", "cloud", "honey", "boba", "panda", "cookie", "sunny", "berry"], b: ["star", "bean", "paws", "muffin", "bubble", "blossom", "sprout", "drop", "puff", "pie", "heart", "cake"] },
+    dark: { a: ["noct", "raven", "grim", "hex", "ash", "obsidian", "crypt", "abyss", "dusk", "lunar", "wraith", "void"], b: ["soul", "whisper", "thorn", "shade", "requiem", "echo", "mist", "fang", "omen", "rune", "veil", "moth"] },
+  };
+  let nickStyle = "gamer";
+  function makeNick() {
+    const set = NICK[nickStyle], pick = (arr) => arr[secureInt(arr.length)];
+    const a = pick(set.a), b = pick(set.b), n = String(secureInt(1000));
+    const forms = [a + b, a + "_" + b, a + "." + b, a + b + n, a + "_" + b + "_" + n.slice(-2), "x" + a + b + "x", a + n, b + "." + a];
+    return pick(forms).slice(0, 32);
+  }
+  function renderNicks() {
+    const ul = $("nicks"); ul.innerHTML = "";
+    const set = new Set(); while (set.size < 6) set.add(makeNick());
+    set.forEach((nick) => {
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="n"></span><button class="btn small" type="button">Copiar</button>';
+      li.querySelector(".n").textContent = nick;
+      const btn = li.querySelector("button");
+      btn.addEventListener("click", () => {
+        const ok = () => { btn.textContent = "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); if (window.fx) window.fx.say("«" + nick + "» te queda re bien 😎"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("done"); }, 1400); };
+        const fb = () => { const r = document.createRange(); r.selectNodeContents(li.querySelector(".n")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = "Pulsá Ctrl+C"; };
+        try { navigator.clipboard.writeText(nick).then(ok, fb); } catch (err) { fb(); }
+      });
+      ul.appendChild(li);
+    });
+  }
+  document.querySelectorAll(".nick-styles .toy").forEach((b) => b.addEventListener("click", () => {
+    nickStyle = b.dataset.style;
+    document.querySelectorAll(".nick-styles .toy").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    renderNicks();
+  }));
+  $("nick-more").addEventListener("click", () => { renderNicks(); if (window.boom) window.boom($("nicks")); });
+  renderNicks();
+
+  /* ---------- App instalable ---------- */
+  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(() => {});
+  let installEvt = null;
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("install").hidden = false; });
+  $("install").addEventListener("click", async () => {
+    if (!installEvt) return;
+    installEvt.prompt();
+    const r = await installEvt.userChoice.catch(() => null);
+    if (r && r.outcome === "accepted" && window.fx) window.fx.say("¡Instalada! Ahora me tenés en la pantalla de inicio 📲");
+    installEvt = null; $("install").hidden = true;
   });
 
   /* ---------- Atajos de teclado ---------- */

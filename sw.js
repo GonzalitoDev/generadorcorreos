@@ -1,7 +1,7 @@
 // Service worker: guarda la página para abrirla rápido y sin conexión.
 // Las llamadas a /api/ (el correo) nunca se guardan: siempre van a la red.
-const CACHE = "gc-v1";
-const SHELL = ["/", "/vendor/qrcode.js", "/icon.svg", "/icon-192.png", "/manifest.webmanifest"];
+const CACHE = "gc-v2";
+const SHELL = ["/", "/app.js", "/vendor/qrcode.js", "/icon.svg", "/icon-192.png", "/manifest.webmanifest", "/fonts/monoton-latin-400-normal.woff2"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

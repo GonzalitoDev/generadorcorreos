@@ -1,20 +1,17 @@
 // Proxy hacia la API de Guerrilla Mail (respaldo cuando mail.tm no responde).
+const { guard, send, rateLimited } = require("./_guard");
 const UPSTREAM = "https://api.guerrillamail.com/ajax.php";
 const FUNCS = new Set(["get_email_address", "set_email_user", "check_email", "get_email_list", "fetch_email", "forget_me", "del_email"]);
 const PARAMS = new Set(["f", "sid_token", "email_user", "seq", "offset", "email_id", "email_addr", "lang"]);
 
-function send(res, status, obj) {
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.end(JSON.stringify(obj));
-}
-
 module.exports = async function handler(req, res) {
   try {
+    if (!guard(req, res, { bucket: "gm", max: 90 })) return;
+    if (req.method && req.method !== "GET") return send(res, 405, { detail: "Método no permitido" });
     const url = new URL(req.url, "http://localhost");
     const f = url.searchParams.get("f") || "";
     if (!FUNCS.has(f)) return send(res, 400, { detail: "Función no permitida" });
+    if (f === "get_email_address" && rateLimited(req, "gm-create", 15)) return send(res, 429, { detail: "Creaste muchos buzones seguidos. Esperá un minuto." });
     const qs = new URLSearchParams();
     for (const [k, v] of url.searchParams) if (PARAMS.has(k)) qs.set(k, v.slice(0, 200));
     const ip = String(req.headers["x-forwarded-for"] || "127.0.0.1").split(",")[0].trim();
@@ -27,6 +24,7 @@ module.exports = async function handler(req, res) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
     res.end(text);
   } catch (e) {
     send(res, 502, { detail: "No se pudo contactar con Guerrilla Mail", error: String(e && e.message || e) });

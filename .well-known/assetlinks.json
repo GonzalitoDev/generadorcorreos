@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.generadorcorreos",
+      "sha256_cert_fingerprints": [
+        "94:DF:5F:02:04:22:32:8F:2D:BD:FF:CE:BE:5F:AA:F0:4B:01:F2:5C:82:FB:B9:12:AD:89:DF:D4:24:DF:17:13"
+      ]
+    }
+  }
+]

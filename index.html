@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Generador de Correos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una hoja de "sobre" centrada; controles arriba, lista de direcciones abajo, franja de correo aéreo como único adorno */
+:root {
+  --bg: #eef1f4;
+  --paper: #ffffff;
+  --ink: #16213a;
+  --muted: #5b6579;
+  --line: #d6dce5;
+  --accent: #c8322b;   /* rojo de sello postal */
+  --accent-2: #1f4fa3; /* azul de correo aéreo */
+  --chip: #f3f5f8;
+  --ok: #1d7a4a;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
+    --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1422; --paper: #171e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #2a3450;
+  --accent: #ef5a50; --accent-2: #6d9bf0; --chip: #1f2840; --ok: #4cc58a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-inline: 16px; padding-block: 32px 48px;
+}
+.wrap { max-width: 760px; margin-inline: auto; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 6vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; }
+h1 .at { color: var(--accent-2); }
+.lede { color: var(--muted); margin: 0; max-width: 60ch; }
+
+.sheet {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+}
+.airmail {
+  height: 8px;
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 14px, var(--paper) 14px 22px, var(--accent-2) 22px 36px, var(--paper) 36px 44px);
+}
+.tabs { display: flex; gap: 4px; padding: 14px 18px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab {
+  font: 600 14px var(--font-body); color: var(--muted); background: none; border: 0;
+  padding: 10px 14px; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px;
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+.panel { padding: 18px; display: grid; gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; color: var(--muted); min-width: 0; }
+input[type="text"], input[type="number"], select {
+  font: 15px var(--font-body); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%;
+}
+.checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.checks label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); font-weight: 400; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn {
+  font: 600 14px var(--font-body); border-radius: 6px; padding: 10px 16px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:hover { filter: brightness(1.05); }
+.hint { font-size: 13px; color: var(--muted); }
+
+.results { border-top: 1px solid var(--line); }
+.results-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; flex-wrap: wrap; }
+.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+ol.list { list-style: none; margin: 0; padding: 0 0 8px; }
+ol.list li {
+  display: flex; align-items: center; gap: 12px; padding: 8px 18px;
+  border-top: 1px dashed var(--line);
+}
+ol.list li:first-child { border-top: 0; }
+.idx { font: 12px var(--font-mono); color: var(--muted); width: 2.2em; flex: none; font-variant-numeric: tabular-nums; }
+.addr { font: 15px var(--font-mono); flex: 1; min-width: 0; overflow-wrap: anywhere; user-select: all; }
+.addr .dom { color: var(--muted); }
+.copy {
+  font: 500 12px var(--font-body); border: 1px solid var(--line); background: var(--chip); color: var(--ink);
+  border-radius: 5px; padding: 5px 10px; cursor: pointer; flex: none;
+}
+.copy.done { color: var(--ok); border-color: var(--ok); }
+.empty { padding: 20px 18px; color: var(--muted); }
+footer { font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  ol.list li { animation: in .25s ease both; }
+  @keyframes in { from { opacity: .3; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Herramienta gratuita</span>
+    <h1>Generador de correos<span class="at">@</span></h1>
+    <p class="lede">Crea ideas de dirección a partir de tu nombre o genera direcciones aleatorias para pruebas y formularios de ejemplo. Todo se calcula en tu navegador; nada se envía a ningún servidor.</p>
+  </header>
+
+  <section class="sheet">
+    <div class="airmail" aria-hidden="true"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-nombre" aria-selected="true" aria-controls="p-nombre">Desde tu nombre</button>
+      <button class="tab" role="tab" id="tab-azar" aria-selected="false" aria-controls="p-azar">Aleatorios</button>
+    </div>
+
+    <form class="panel" id="p-nombre" role="tabpanel" aria-labelledby="tab-nombre">
+      <div class="grid">
+        <label>Nombre<input type="text" id="n-nombre" value="María José" autocomplete="off"></label>
+        <label>Apellido<input type="text" id="n-apellido" value="García Núñez" autocomplete="off"></label>
+        <label>Extra (año, ciudad, apodo)<input type="text" id="n-extra" value="1994" autocomplete="off"></label>
+        <label>Dominio<input type="text" id="n-dominio" value="gmail.com" list="dominios" autocomplete="off"></label>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="n-puntos" checked> Con puntos</label>
+        <label><input type="checkbox" id="n-guiones" checked> Con guiones bajos</label>
+        <label><input type="checkbox" id="n-extras" checked> Incluir extra</label>
+      </div>
+      <div class="row">
+        <button class="btn primary" type="submit">Generar ideas</button>
+        <span class="hint">Se quitan tildes y la ñ, que no suelen admitirse en direcciones.</span>
+      </div>
+    </form>
+
+    <form class="panel" id="p-azar" role="tabpanel" aria-labelledby="tab-azar" hidden>
+      <div class="grid">
+        <label>Cantidad<input type="number" id="a-cantidad" value="10" min="1" max="200"></label>
+        <label>Estilo
+          <select id="a-estilo">
+            <option value="persona">Nombre de persona</option>
+            <option value="palabras">Palabras + número</option>
+            <option value="aleatorio">Caracteres aleatorios</option>
+          </select>
+        </label>
+        <label>Dominio<input type="text" id="a-dominio" value="example.com" list="dominios" autocomplete="off"></label>
+      </div>
+      <div class="row">
+        <button class="btn primary" type="submit">Generar</button>
+        <span class="hint">Usa <b>example.com</b> para datos de prueba: es un dominio reservado y nunca recibe correo real.</span>
+      </div>
+    </form>
+
+    <datalist id="dominios">
+      <option value="gmail.com"></option><option value="outlook.com"></option><option value="hotmail.com"></option>
+      <option value="yahoo.com"></option><option value="icloud.com"></option><option value="proton.me"></option>
+      <option value="example.com"></option><option value="example.org"></option><option value="test.local"></option>
+    </datalist>
+
+    <div class="results">
+      <div class="results-head">
+        <span class="count" id="count"></span>
+        <button class="btn" type="button" id="copy-all">Copiar todos</button>
+      </div>
+      <ol class="list" id="list"></ol>
+    </div>
+  </section>
+
+  <footer>Consejo: estas son ideas. Para saber si una dirección está libre, intenta registrarla en el proveedor que elijas.</footer>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const list = $("list"), count = $("count");
+  let current = [];
+
+  const clean = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "").trim();
+  const domainOf = (s) => (s.trim().replace(/^@+/, "").toLowerCase() || "example.com");
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const num = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  function render(addrs) {
+    current = addrs;
+    list.innerHTML = "";
+    if (!addrs.length) {
+      list.innerHTML = '<li class="empty">Escribe al menos un nombre para ver ideas.</li>';
+      count.textContent = "0 direcciones";
+      return;
+    }
+    addrs.forEach((a, i) => {
+      const [user, dom] = a.split("@");
+      const li = document.createElement("li");
+      li.style.animationDelay = Math.min(i * 15, 300) + "ms";
+      li.innerHTML = '<span class="idx"></span><span class="addr"><span class="u"></span><span class="dom"></span></span><button class="copy" type="button">Copiar</button>';
+      li.querySelector(".idx").textContent = String(i + 1).padStart(2, "0");
+      li.querySelector(".u").textContent = user;
+      li.querySelector(".dom").textContent = "@" + dom;
+      li.querySelector(".copy").addEventListener("click", (e) => copy(a, e.currentTarget, li.querySelector(".addr")));
+      list.appendChild(li);
+    });
+    count.textContent = addrs.length + (addrs.length === 1 ? " dirección" : " direcciones");
+  }
+
+  function copy(text, btn, fallbackEl) {
+    const ok = () => { const t = btn.textContent; btn.textContent = "Copiado"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = t; btn.classList.remove("done"); }, 1400); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(fallbackEl);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selecciona y copia"; };
+    try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+  }
+
+  $("copy-all").addEventListener("click", (e) => copy(current.join("\n"), e.currentTarget, list));
+
+  /* ---- Desde el nombre ---- */
+  function fromName() {
+    const n = clean($("n-nombre").value).split(/\s+/).filter(Boolean);
+    const a = clean($("n-apellido").value).split(/\s+/).filter(Boolean);
+    const x = clean($("n-extra").value).replace(/\s+/g, "");
+    const dom = domainOf($("n-dominio").value);
+    const seps = [""];
+    if ($("n-puntos").checked) seps.push(".");
+    if ($("n-guiones").checked) seps.push("_");
+    const useX = $("n-extras").checked && x;
+    if (!n.length && !a.length) return [];
+
+    const first = n[0] || "", ap1 = a[0] || "", ap2 = a[1] || "";
+    const fullFirst = n.join(""), ini = n.map((w) => w[0]).join("");
+    const bases = new Set();
+    for (const s of seps) {
+      const add = (...parts) => { const p = parts.filter(Boolean); if (p.length) bases.add(p.join(s)); };
+      add(first, ap1); add(fullFirst, ap1); add(ap1, first); add(ini, ap1);
+      add(first, ap1 ? ap1[0] : ""); add(first, ap1, ap2 ? ap2[0] : "");
+      add(first[0], ap1, ap2); add(first, ap2);
+      if (useX) { add(first, ap1, x); add(ini + ap1, x); add(first, x); }
+    }
+    if (first) bases.add(first);
+    if (ap1) bases.add(ini + ap1 + (ap2 ? ap2[0] : ""));
+    if (useX) bases.add(first + ap1 + x.slice(-2));
+    return [...bases].filter((b) => b.length >= 3 && b.length <= 64 && !/^[._]|[._]$/.test(b))
+      .map((b) => b + "@" + dom);
+  }
+
+  /* ---- Aleatorios ---- */
+  const NOMBRES = ["lucia","mateo","sofia","santiago","valentina","diego","camila","nicolas","isabella","martin","ana","pablo","elena","javier","carla","andres","paula","gabriel","julia","tomas","sara","hugo","laura","daniel","emma","bruno"];
+  const APELLIDOS = ["garcia","rodriguez","lopez","martinez","gonzalez","perez","sanchez","ramirez","torres","flores","rivera","gomez","diaz","moreno","ruiz","castro","vargas","romero","herrera","medina","ortiz","silva","rojas","navarro"];
+  const PALABRAS = ["sol","luna","rio","nube","faro","cometa","trigo","brisa","zorro","lince","roble","coral","ambar","pixel","cielo","volcan","halcon","marea","tango","canela"];
+
+  function randomOne(estilo) {
+    if (estilo === "persona") {
+      const f = pick(NOMBRES), l = pick(APELLIDOS), s = pick([".", "_", ""]);
+      return pick([f + s + l, f[0] + s + l, f + s + l + num(1, 99), l + s + f, f + s + l[0] + num(10, 999)]);
+    }
+    if (estilo === "palabras") return pick(PALABRAS) + pick([".", "_", ""]) + pick(PALABRAS) + num(1, 9999);
+    const abc = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let s = pick("abcdefghijklmnopqrstuvwxyz".split(""));
+    for (let i = 0, n = num(7, 11); i < n; i++) s += abc[num(0, abc.length - 1)];
+    return s;
+  }
+
+  function random() {
+    const n = Math.max(1, Math.min(200, parseInt($("a-cantidad").value, 10) || 10));
+    const estilo = $("a-estilo").value, dom = domainOf($("a-dominio").value);
+    const out = new Set(); let guard = 0;
+    while (out.size < n && guard++ < n * 20) out.add(randomOne(estilo) + "@" + dom);
+    return [...out];
+  }
+
+  /* ---- Pestañas y formularios ---- */
+  const tabs = [["tab-nombre", "p-nombre", fromName], ["tab-azar", "p-azar", random]];
+  tabs.forEach(([t, p, fn]) => {
+    $(t).addEventListener("click", () => {
+      tabs.forEach(([t2, p2]) => { $(t2).setAttribute("aria-selected", t2 === t); $(p2).hidden = p2 !== p; });
+      try { localStorage.setItem("gc-tab", t); } catch (e) {}
+      render(fn());
+    });
+    $(p).addEventListener("submit", (e) => { e.preventDefault(); render(fn()); });
+  });
+  $("p-nombre").addEventListener("input", () => render(fromName()));
+
+  let start = "tab-nombre";
+  try { if (localStorage.getItem("gc-tab") === "tab-azar") start = "tab-azar"; } catch (e) {}
+  $(start).click();
+})();
+</script>
+</body>
+</html>

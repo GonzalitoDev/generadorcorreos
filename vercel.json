@@ -1,0 +1,3 @@
+{
+  "functions": { "api/mail.js": { "maxDuration": 15 } }
+}

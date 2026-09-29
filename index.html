@@ -195,7 +195,10 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
 
 <script>
 (function () {
-  const API = "https://api.mail.tm";
+  const DIRECT = "https://api.mail.tm";
+  const PROXY = "/api/mail?path=";
+  // En Vercel usamos el proxy del mismo dominio; si no existe (otro hosting), vamos directo.
+  let useProxy = /^https?:$/.test(location.protocol);
   const KEY = "gc-mailbox";
   const $ = (id) => document.getElementById(id);
   let acct = null;          // {id, address, password, token, created}
@@ -205,9 +208,12 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
 
   /* ---------- API ---------- */
   async function api(path, opts = {}) {
-    const headers = { Accept: "application/json", ...(opts.body ? { "Content-Type": "application/json" } : {}) };
+    const method = opts.method || "GET";
+    const headers = { Accept: "application/json" };
+    if (opts.body) headers["Content-Type"] = method === "PATCH" && !useProxy ? "application/merge-patch+json" : "application/json";
     if (acct && acct.token && !opts.noAuth) headers.Authorization = "Bearer " + acct.token;
-    const res = await fetch(API + path, { method: opts.method || "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    const url = useProxy ? PROXY + encodeURIComponent(path) : DIRECT + path;
+    const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
     if (res.status === 204) return null;
     let data = null;
     try { data = await res.json(); } catch (e) {}
@@ -245,7 +251,13 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
 
   /* ---------- Cuenta ---------- */
   async function loadDomains() {
-    const list = members(await api("/domains?page=1", { noAuth: true })).filter((d) => d.isActive !== false && d.isPrivate !== true);
+    let data;
+    if (useProxy) {
+      try { data = await api("/domains?page=1", { noAuth: true }); if (!data) throw new Error("vacío"); }
+      catch (e) { useProxy = false; }
+    }
+    if (!useProxy) data = await api("/domains?page=1", { noAuth: true });
+    const list = members(data).filter((d) => d.isActive !== false && d.isPrivate !== true);
     domains = list.map((d) => d.domain);
     if (!domains.length) throw new Error("El servicio no tiene dominios disponibles ahora mismo.");
     $("domain").innerHTML = "";
@@ -417,7 +429,10 @@ pre.body { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px var(--font
       showAccount(); startPolling();
     } catch (e) {
       $("address").textContent = "No disponible";
-      status("No se pudo conectar con el servicio de correo (" + e.message + "). Revisa tu conexión y recarga la página.", true);
+      const blocked = /fetch|network|load/i.test(e.message);
+      status(blocked
+        ? "El navegador bloqueó la conexión con el servicio de correo. Abre la página publicada (por ejemplo tu dirección de Vercel) en una pestaña normal y desactiva el bloqueador de anuncios para este sitio."
+        : "No se pudo conectar con el servicio de correo (" + e.message + "). Recarga la página.", true);
     } finally { busy(false); }
   })();
 })();

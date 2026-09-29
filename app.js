@@ -759,6 +759,173 @@
     setTimeout(() => location.reload(), 900);
   });
 
+  /* ---------- Utilidades compartidas ---------- */
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function copyText(text, btn, label, selectEl) {
+    const orig = btn.textContent;
+    const ok = () => { btn.textContent = label || "¡Copiado!"; btn.classList.add("done"); if (window.boom) window.boom(btn); setTimeout(() => { btn.textContent = orig; btn.classList.remove("done"); }, 1400); };
+    const fb = () => { if (selectEl) { const r = document.createRange(); r.selectNodeContents(selectEl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } btn.textContent = "Pulsá Ctrl+C"; setTimeout(() => { btn.textContent = orig; }, 2200); };
+    try { navigator.clipboard.writeText(text).then(ok, fb); } catch (err) { fb(); }
+  }
+  function verdict(box, kind, title, html) {
+    box.innerHTML = '<div class="verdict ' + kind + '"><strong></strong><div class="v-body"></div></div>';
+    box.querySelector("strong").textContent = title;
+    box.querySelector(".v-body").innerHTML = html;
+  }
+
+  /* ---------- ¿Tu mail se filtró? ---------- */
+  $("breach-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("breach-mail").value.trim().toLowerCase(), out = $("breach-out"), btn = $("breach-go");
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) { verdict(out, "bad", "Mail inválido", "Escribí tu mail completo, por ejemplo tunombre@gmail.com."); return; }
+    btn.disabled = true; btn.textContent = "Revisando…"; out.innerHTML = "";
+    try {
+      const r = await getJSON("/api/breach?email=" + encodeURIComponent(email));
+      if (!r.found) {
+        verdict(out, "good", "¡Buenas noticias! 🎉", "No encontramos <b>" + esc(email) + "</b> en las filtraciones conocidas. Igual, usá contraseñas distintas en cada sitio.");
+        if (window.boom) window.boom(out);
+      } else {
+        verdict(out, "bad", "Apareció en " + r.breaches.length + (r.breaches.length === 1 ? " filtración" : " filtraciones"),
+          "<p>Tu mail estuvo en hackeos a estos sitios. <b>Cambiá la contraseña</b> de los que uses y activá la verificación en dos pasos.</p>" +
+          '<div class="breach-tags">' + r.breaches.map((b) => "<span>" + esc(b) + "</span>").join("") + "</div>");
+        if (window.fx) window.fx.say("Uh… cambiá esas contraseñas y activá la verificación en dos pasos 🔐", 4500);
+      }
+    } catch (err) {
+      verdict(out, "bad", "No se pudo revisar", esc(err.message) + ". Probá de nuevo en un rato.");
+    } finally { btn.disabled = false; btn.textContent = "Revisar mail"; }
+  });
+
+  /* ---------- ¿Tu contraseña se filtró? (k-anonimato) ---------- */
+  $("pwcheck-eye").addEventListener("click", (e) => {
+    const show = $("pwcheck").type === "password";
+    $("pwcheck").type = show ? "text" : "password"; e.currentTarget.textContent = show ? "Ocultar" : "Ver"; e.currentTarget.setAttribute("aria-pressed", show);
+  });
+  async function sha1Hex(text) {
+    const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  }
+  $("pwcheck-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pw = $("pwcheck").value, out = $("pwcheck-out"), btn = $("pwcheck-go");
+    if (!pw) return;
+    btn.disabled = true; btn.textContent = "Revisando…"; out.innerHTML = "";
+    try {
+      const hash = await sha1Hex(pw), prefix = hash.slice(0, 5), suffix = hash.slice(5);
+      const res = await fetch("https://api.pwnedpasswords.com/range/" + prefix, { headers: { "Add-Padding": "true" }, referrerPolicy: "no-referrer", credentials: "omit" });
+      if (!res.ok) throw new Error("El servicio respondió " + res.status);
+      const line = (await res.text()).split("\n").find((l) => l.slice(0, 35).toUpperCase() === suffix);
+      const count = line ? parseInt(line.split(":")[1], 10) : 0;
+      if (count > 0) {
+        verdict(out, "bad", "Filtrada " + count.toLocaleString("es") + (count === 1 ? " vez" : " veces") + " 😱",
+          "Esta contraseña está en listas de contraseñas hackeadas. <b>No la uses más</b>: cambiala en todos los sitios donde la tengas. Podés crear una segura en <a href=\"#tools\">Herramientas</a>.");
+      } else {
+        verdict(out, "good", "No aparece en filtraciones ✅", "Buena señal. Aun así, usá una contraseña distinta en cada sitio.");
+        if (window.boom) window.boom(out);
+      }
+    } catch (err) {
+      verdict(out, "bad", "No se pudo revisar", esc(err.message) + ". Probá de nuevo en un rato.");
+    } finally { btn.disabled = false; btn.textContent = "Revisar contraseña"; $("pwcheck").value = ""; }
+  });
+
+  /* ---------- Firma de mail ---------- */
+  const SIG_STYLES = {
+    clasica: { accent: "#1f3a5f", font: "Georgia, 'Times New Roman', serif", name: "#111111", sub: "#555555", bar: "#1f3a5f" },
+    moderna: { accent: "#6d28d9", font: "Arial, Helvetica, sans-serif", name: "#111111", sub: "#666666", bar: "#6d28d9" },
+    falopa: { accent: "#e11d8a", font: "'Trebuchet MS', Arial, sans-serif", name: "#e11d8a", sub: "#6d28d9", bar: "#00b8c4" },
+  };
+  function cleanHandle(v) { return String(v || "").trim().replace(/^@/, "").replace(/^https?:\/\/[^/]+\//i, "").replace(/[^A-Za-z0-9._-]/g, ""); }
+  function cleanWeb(v) {
+    v = String(v || "").trim(); if (!v) return null;
+    try { const u = new URL(/^https?:\/\//i.test(v) ? v : "https://" + v); if (!/^https?:$/.test(u.protocol) || !u.hostname.includes(".")) return null; return u; } catch (e) { return null; }
+  }
+  function buildSignature() {
+    const st = SIG_STYLES[$("sig-style").value] || SIG_STYLES.moderna;
+    const name = $("sig-name").value.trim(), role = $("sig-role").value.trim(), company = $("sig-company").value.trim(), phone = $("sig-phone").value.trim();
+    const web = cleanWeb($("sig-web").value);
+    const links = [];
+    if (web) links.push({ label: web.hostname.replace(/^www\./, ""), href: web.href });
+    const ig = cleanHandle($("sig-ig").value), li = cleanHandle($("sig-in").value), gh = cleanHandle($("sig-gh").value);
+    if (ig) links.push({ label: "Instagram", href: "https://instagram.com/" + ig });
+    if (li) links.push({ label: "LinkedIn", href: "https://www.linkedin.com/in/" + li });
+    if (gh) links.push({ label: "GitHub", href: "https://github.com/" + gh });
+    const roleLine = [role, company].filter(Boolean).join(" · ");
+    const html =
+      '<table cellpadding="0" cellspacing="0" border="0" style="font-family:' + st.font + ';font-size:14px;line-height:1.4;color:#222222;">' +
+      '<tr><td style="border-left:4px solid ' + st.bar + ';padding:2px 0 2px 12px;">' +
+      '<div style="font-size:17px;font-weight:bold;color:' + st.name + ';">' + esc(name || "Tu nombre") + (st === SIG_STYLES.falopa ? " ✨" : "") + "</div>" +
+      (roleLine ? '<div style="color:' + st.sub + ';">' + esc(roleLine) + "</div>" : "") +
+      (phone ? '<div style="color:' + st.sub + ';">' + esc(phone) + "</div>" : "") +
+      (links.length ? '<div style="margin-top:6px;">' + links.map((l) => '<a href="' + esc(l.href) + '" style="color:' + st.accent + ';text-decoration:none;font-weight:bold;">' + esc(l.label) + "</a>").join(' <span style="color:#bbbbbb;">|</span> ') + "</div>" : "") +
+      "</td></tr></table>";
+    const text = ["-- ", name || "Tu nombre", roleLine, phone, ...links.map((l) => l.label + ": " + l.href)].filter(Boolean).join("\n");
+    $("sig-preview").innerHTML = html;
+    return { html, text };
+  }
+  ["sig-name", "sig-role", "sig-company", "sig-phone", "sig-web", "sig-ig", "sig-in", "sig-gh", "sig-style"].forEach((id) => $(id).addEventListener("input", buildSignature));
+  $("sig-form").addEventListener("submit", (e) => e.preventDefault());
+  $("sig-copy").addEventListener("click", async (e) => {
+    const { html, text } = buildSignature(), btn = e.currentTarget;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
+      btn.textContent = "¡Firma copiada!"; btn.classList.add("done"); if (window.boom) window.boom(btn);
+      $("sig-msg").textContent = "Listo. Pegala en Gmail: Configuración → Ver toda la configuración → Firma.";
+      setTimeout(() => { btn.textContent = "Copiar firma"; btn.classList.remove("done"); }, 1600);
+    } catch (err) {
+      const r = document.createRange(); r.selectNodeContents($("sig-preview")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      $("sig-msg").textContent = "Tu navegador no dejó copiar con formato. Ya seleccionamos la firma: pulsá Ctrl+C (o Cmd+C).";
+    }
+  });
+  $("sig-copy-txt").addEventListener("click", (e) => copyText(buildSignature().text, e.currentTarget, "¡Copiada!"));
+  buildSignature();
+
+  /* ---------- Plantillas de mails ---------- */
+  const TEMPLATES = {
+    baja: (d) => ({
+      subject: "Pedido de baja de la lista de correos" + d.refS,
+      body: `Hola, equipo de ${d.company}:\n\nLes pido que den de baja mi dirección de correo de todas sus listas de envío (newsletters, promociones y novedades), con efecto inmediato.${d.refL}\n${d.detailP}\nPor favor, confírmenme por este medio cuando esté hecho.\n\nGracias,\n${d.name}`,
+    }),
+    reembolso: (d) => ({
+      subject: "Solicitud de reembolso" + d.refS,
+      body: `Hola, equipo de ${d.company}:\n\nLes escribo para solicitar el reembolso de mi compra.${d.refL}\n${d.detailP || "\nEl producto o servicio no cumplió con lo esperado.\n"}\nLes pido que me indiquen los pasos a seguir y el plazo estimado para recibir el dinero por el mismo medio de pago que usé.\n\nQuedo atento/a a su respuesta.\n\nSaludos,\n${d.name}`,
+    }),
+    reclamo: (d) => ({
+      subject: "Reclamo formal" + d.refS,
+      body: `Hola, equipo de ${d.company}:\n\nQuiero dejar asentado un reclamo formal.${d.refL}\n${d.detailP || "\n[Contá brevemente qué pasó y cuándo.]\n"}\nLes pido una solución concreta y un número de reclamo para hacer el seguimiento. Si no recibo respuesta en un plazo razonable, voy a recurrir a los organismos de defensa del consumidor.\n\nSaludos,\n${d.name}`,
+    }),
+    cancelar: (d) => ({
+      subject: "Cancelación de suscripción" + d.refS,
+      body: `Hola, equipo de ${d.company}:\n\nLes pido que cancelen mi suscripción y que no se realicen nuevos cobros a partir de hoy.${d.refL}\n${d.detailP}\nPor favor, envíenme la confirmación de la baja por escrito.\n\nGracias,\n${d.name}`,
+    }),
+    datos: (d) => ({
+      subject: "Solicitud de eliminación de datos personales" + d.refS,
+      body: `Hola, equipo de ${d.company}:\n\nEn ejercicio de mi derecho de supresión, reconocido por la normativa de protección de datos personales (por ejemplo, la Ley 25.326 en Argentina o el RGPD en la Unión Europea), les pido que eliminen todos los datos personales que tengan sobre mí.${d.refL}\n${d.detailP}\nTambién les pido que me confirmen por escrito cuando la eliminación esté completa y si compartieron mis datos con terceros.\n\nSaludos,\n${d.name}`,
+    }),
+    noLlego: (d) => ({
+      subject: "Pedido no recibido" + d.refS,
+      body: `Hola, equipo de ${d.company}:\n\nTodavía no recibí mi pedido y ya pasó la fecha estimada de entrega.${d.refL}\n${d.detailP}\nLes pido que me informen en qué estado está el envío y, si se perdió, que me lo reenvíen o me devuelvan el dinero.\n\nGracias,\n${d.name}`,
+    }),
+  };
+  let tplCurrent = { subject: "", body: "" };
+  function buildTemplate() {
+    const ref = $("tpl-ref").value.trim(), detail = $("tpl-detail").value.trim();
+    const d = {
+      name: $("tpl-name").value.trim() || "[Tu nombre]",
+      company: $("tpl-company").value.trim() || "[Empresa]",
+      refS: ref ? " – " + ref : "",
+      refL: ref ? "\n\nNúmero de pedido o cuenta: " + ref + "." : "",
+      detailP: detail ? "\n" + detail + "\n" : "",
+    };
+    tplCurrent = TEMPLATES[$("tpl-kind").value](d);
+    $("tpl-subj").textContent = tplCurrent.subject;
+    $("tpl-body").textContent = tplCurrent.body;
+    $("tpl-mailto").href = "mailto:?subject=" + encodeURIComponent(tplCurrent.subject) + "&body=" + encodeURIComponent(tplCurrent.body);
+  }
+  ["tpl-kind", "tpl-name", "tpl-company", "tpl-ref", "tpl-detail"].forEach((id) => $(id).addEventListener("input", buildTemplate));
+  $("tpl-form").addEventListener("submit", (e) => e.preventDefault());
+  $("tpl-copy").addEventListener("click", (e) => copyText(tplCurrent.body, e.currentTarget, "¡Mail copiado!", $("tpl-body")));
+  $("tpl-copy-subj").addEventListener("click", (e) => copyText(tplCurrent.subject, e.currentTarget, "¡Copiado!", $("tpl-subj")));
+  buildTemplate();
+
   /* ---------- Atajos de teclado ---------- */
   addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || (e.target.closest && e.target.closest("input, select, textarea"))) return;
